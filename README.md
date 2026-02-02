@@ -10,6 +10,8 @@ A simple web dashboard to view and manage your VS Code workspaces. This tool rea
 - 🔄 **Auto-Refresh**: Automatically detects new workspaces every 30 seconds
 - 🎨 **Clean UI**: Modern, responsive interface that works on all screen sizes
 - 🔒 **Secure**: Runs only on localhost (127.0.0.1) for security
+- 🚀 **Quick Open**: Click on any workspace name to open it directly in VS Code
+- 💡 **Path Tooltips**: Hover over workspace names to see the full file path
 
 ## Supported Workspace Types
 
@@ -39,6 +41,15 @@ This will:
 1. Build the React frontend
 2. Start the Express server on http://localhost:3000
 3. Open your browser to view the dashboard
+
+### Opening Workspaces
+
+Click on any workspace name in the dashboard to open it directly in VS Code:
+- If the workspace is already open, VS Code will focus that window
+- If the workspace is not open, a new VS Code window will open with that workspace
+- Your browser may show a security prompt the first time - click "Allow" to proceed
+
+**Note**: VS Code must be installed for this feature to work.
 
 ### Development Mode
 
@@ -122,6 +133,40 @@ The server is configured to only listen on `127.0.0.1` (localhost) and is not ac
 - Ensure port 3000 is not already in use
 - Try a different port: `PORT=8080 npm start`
 - Check Node.js is installed: `node --version`
+
+### Clicking workspace names doesn't open VS Code
+
+- Verify VS Code is installed on your system
+- Check that the `code` command is available in your PATH (run `which code` in terminal)
+- Your browser may require permission to open the `vscode://` protocol - click "Allow" when prompted
+- Try opening VS Code manually first, then try clicking a workspace name again
+- On macOS, you may need to register the VS Code protocol handler by running:
+  ```bash
+  /Applications/Visual\ Studio\ Code.app/Contents/Resources/app/bin/code --install-code-handler
+  ```
+
+### Remote workspaces (SSH, Dev Containers) don't open
+
+- Remote workspaces require VS Code to have the appropriate remote extension installed:
+  - **SSH Remote**: Install the "Remote - SSH" extension
+  - **Dev Containers**: Install the "Dev Containers" extension
+  - **Attached Containers**: Install the "Dev Containers" extension
+- The browser console may show "scheme does not have a registered handler" - this is expected if the remote extension isn't installed
+- Install the required extension in VS Code, then try clicking the remote workspace link again
+- The dashboard will attempt to open the workspace in a new window if the initial attempt fails
+
+### Tooltip not showing
+
+- The tooltip uses the browser's native `title` attribute
+- Hover over the workspace name and wait a moment for the tooltip to appear
+- The tooltip appearance depends on your operating system and browser
+- On some systems, you may need to hover for a second or two before it appears
+
+### Browser security warning
+
+- When you click a workspace name for the first time, your browser may show a security prompt
+- This is normal - click "Allow" or "Open" to permit the `vscode://` protocol handler
+- You can usually check "Remember this choice" to avoid the prompt in the future
 
 ## Requirements
 

@@ -78,6 +78,13 @@ function Dashboard({ workspaces, onRefresh }) {
         <p className="workspace-count">
           {filteredAndSortedWorkspaces.length} of {workspaces.length} workspaces
         </p>
+        <div className="info-banner">
+          <span className="info-icon">ℹ️</span>
+          <p className="info-text">
+            Click on any workspace name to open it in VS Code. 
+            <span className="info-note">Note: VS Code must be installed and your browser may show a security prompt the first time.</span>
+          </p>
+        </div>
       </header>
 
       <SearchFilter

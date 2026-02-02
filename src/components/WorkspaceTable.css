@@ -43,7 +43,37 @@
 
 .workspace-name {
   font-weight: 500;
+}
+
+.workspace-link {
   color: #1976d2;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: color 0.2s, text-decoration 0.2s;
+}
+
+.workspace-link:hover {
+  color: #1565c0;
+  text-decoration: underline;
+}
+
+.workspace-link:focus {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.external-icon {
+  font-size: 0.75em;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.workspace-link:hover .external-icon {
+  opacity: 1;
 }
 
 .workspace-date {
