@@ -42,7 +42,7 @@ npm start
 
 This will:
 1. Build the React frontend
-2. Start the Express server on http://localhost:3000
+2. Start the Express server on http://localhost:3010
 3. Open your browser to view the dashboard
 
 ### Option 2: Docker Deployment
@@ -69,7 +69,7 @@ This will:
    docker-compose up -d
    ```
 
-4. Access the dashboard at http://localhost:3000
+4. Access the dashboard at http://localhost:3010
 
 #### Docker Commands
 
@@ -82,7 +82,7 @@ This will:
 
 The following environment variables can be set in `.env`:
 
-- `PORT`: Port to expose the application on (default: 3000)
+- `PORT`: Port to expose the application on (default: 3010)
 - `WORKSPACES_PATH`: Path to VS Code workspaces directory on the host (required for Docker)
 
 #### Volume Mounting

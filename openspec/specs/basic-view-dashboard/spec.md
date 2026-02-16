@@ -74,19 +74,27 @@ The system SHALL provide a REST API endpoint that returns all discovered workspa
 - **THEN** each workspace object includes: name, path, and last modified date
 
 ### Requirement: Display dashboard UI
-The system SHALL serve a web-based dashboard that displays all workspaces in a user-friendly format with correctly formatted remote workspace URIs.
+The system SHALL serve a web-based dashboard that displays all workspaces in a user-friendly format with resizable columns and detailed workspace attributes.
 
 #### Scenario: Dashboard loads successfully
-- **WHEN** a user navigates to http://localhost:3000
-- **THEN** the dashboard UI loads and displays a list of all workspaces
+- **WHEN** a user navigates to http://localhost:3010
+- **THEN** the dashboard UI loads and displays a list of all workspaces with resizable columns
 
-#### Scenario: Dashboard displays workspace information
+#### Scenario: Dashboard displays workspace information with new columns
 - **WHEN** the dashboard is loaded
-- **THEN** each workspace is displayed with its name, path, and last modified date in a sortable table
+- **THEN** each workspace is displayed with columns: Name, Last Modified, Type, SSH Host, and Path in a sortable, resizable table
 
-#### Scenario: Remote workspace links use correct VS Code URI format
-- **WHEN** the dashboard displays a remote workspace (SSH, dev container, or attached container)
-- **THEN** the workspace link uses the `vscode://vscode-remote/` format instead of `vscode-remote://`
+#### Scenario: Column widths are resizable
+- **WHEN** a user positions the cursor on the border between column headers
+- **THEN** the cursor changes to indicate the column is resizable, and the user can drag to resize
+
+#### Scenario: SSH Host column shows remote host information
+- **WHEN** a remote workspace (SSH, dev container, attached container) is displayed
+- **THEN** the SSH Host column displays the SSH host for SSH remotes, or is empty for other types
+
+#### Scenario: Path column shows workspace path
+- **WHEN** any workspace is displayed
+- **THEN** the Path column displays the workspace path (local path for local workspaces, remote path for remote workspaces)
 
 ### Requirement: Search and filter workspaces
 The system SHALL allow users to search and filter workspaces by name or path.
@@ -100,7 +108,7 @@ The system SHALL allow users to search and filter workspaces by name or path.
 - **THEN** the dashboard filters workspaces to show only those with matching paths
 
 ### Requirement: Sort workspace list
-The system SHALL allow users to sort the workspace list by name, path, or last modified date.
+The system SHALL allow users to sort the workspace list by name, path, last modified date, SSH host, or extracted workspace path.
 
 #### Scenario: User sorts by name
 - **WHEN** a user clicks the "Name" column header
@@ -109,6 +117,14 @@ The system SHALL allow users to sort the workspace list by name, path, or last m
 #### Scenario: User sorts by last modified date
 - **WHEN** a user clicks the "Last Modified" column header
 - **THEN** the workspace list is sorted by date (newest first or oldest first on toggle)
+
+#### Scenario: User sorts by SSH host
+- **WHEN** a user clicks the "SSH Host" column header
+- **THEN** the workspace list is sorted alphabetically by SSH host (extracted from remote workspace URIs), with empty values sorted to the end
+
+#### Scenario: User sorts by workspace path
+- **WHEN** a user clicks the "Path" column header
+- **THEN** the workspace list is sorted alphabetically by the extracted workspace path
 
 ### Requirement: Periodic workspace refresh
 The system SHALL periodically refresh the workspace list to detect new or removed workspaces.
