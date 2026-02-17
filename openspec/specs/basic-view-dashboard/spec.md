@@ -152,3 +152,28 @@ The system SHALL generate clickable workspace links that open the workspace in V
 - **WHEN** a remote workspace is displayed in the dashboard
 - **THEN** the href attribute uses the `vscode://vscode-remote/` format that VS Code recognizes
 
+### Requirement: Prop stability for Dashboard component
+The system SHALL ensure stable prop references are passed to the Dashboard component to prevent unnecessary re-renders and infinite loop issues.
+
+#### Scenario: Workspaces array has stable reference
+- **WHEN** the App component renders the Dashboard
+- **THEN** the workspaces prop SHALL be memoized using `useMemo` to ensure reference stability across re-renders
+
+#### Scenario: Refresh callback has stable reference
+- **WHEN** the App component renders the Dashboard
+- **THEN** the onRefresh callback SHALL be memoized using `useCallback` to prevent unnecessary effect re-executions in child components
+
+#### Rationale
+Without memoization, each render of App creates new array/function references, triggering Dashboard's `useEffect` hooks that depend on these props, potentially causing infinite loops or excessive re-renders.
+
+### Requirement: State management for error handling
+The system SHALL maintain proper state for error recovery and retry mechanisms.
+
+#### Scenario: Retry count is tracked
+- **WHEN** a user clicks the retry button after an error
+- **THEN** the system increments a `retryCount` state to trigger a fresh data fetch
+
+#### Scenario: Loading state is managed during retries
+- **WHEN** a retry is initiated
+- **THEN** the loading state is set to true and error state is cleared before attempting to fetch data again
+

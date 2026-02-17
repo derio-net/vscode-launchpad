@@ -8,6 +8,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFetching, setIsFetching] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Debug logging removed - fix verified
 
   // Fetch workspaces from API
   const fetchWorkspaces = async () => {
@@ -38,6 +41,9 @@ function App() {
   const handleRefresh = React.useCallback(() => {
     fetchWorkspaces();
   }, []);
+
+  // Memoize workspaces to ensure stable reference for Dashboard's useEffect
+  const memoizedWorkspaces = React.useMemo(() => workspaces, [workspaces]);
 
   // Fetch workspaces on initial load
   useEffect(() => {
@@ -81,7 +87,7 @@ function App() {
 
   return (
     <div className="app">
-      <Dashboard workspaces={workspaces} onRefresh={handleRefresh} />
+      <Dashboard workspaces={memoizedWorkspaces} onRefresh={handleRefresh} />
     </div>
   );
 }

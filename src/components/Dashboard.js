@@ -168,9 +168,7 @@ function Dashboard({ workspaces, onRefresh }) {
           path: ws.path
         }));
 
-        console.log('Calling validatePaths with', workspacesToValidate.length, 'workspaces');
         const response = await validatePaths(workspacesToValidate);
-        console.log('Validation complete, results:', response.results);
         
         if (isMounted) {
           setValidationStatus(response.results || {});
