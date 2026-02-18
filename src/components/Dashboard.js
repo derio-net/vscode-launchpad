@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import WorkspaceTable from './WorkspaceTable';
 import SearchFilter from './SearchFilter';
 import { validatePaths, deleteWorkspaces } from '../api/client';
+import { ask } from '@tauri-apps/plugin-dialog';
 import './Dashboard.css';
 
 // Helper functions for extracting computed values from workspace URIs
@@ -209,11 +210,11 @@ function Dashboard({ workspaces, onRefresh }) {
   }, [filteredAndSortedWorkspaces]);
 
   // Delete handlers
-  const handleDeleteClick = () => {
+  const handleDeleteClick = async () => {
     console.log('[Dashboard] Delete button clicked');
     console.log('[Dashboard] Selected workspaces count:', selectedWorkspaces.size);
     console.log('[Dashboard] Selected workspaces:', Array.from(selectedWorkspaces));
-    
+
     if (selectedWorkspaces.size === 0) {
       console.log('[Dashboard] No workspaces selected, returning early');
       return;
@@ -221,15 +222,19 @@ function Dashboard({ workspaces, onRefresh }) {
 
     const selectedList = workspaces.filter(ws => selectedWorkspaces.has(ws.id));
     const names = selectedList.map(ws => ws.name).join('\n  - ');
-    
+
     console.log('[Dashboard] Selected workspace names:', names);
     console.log('[Dashboard] About to show confirmation dialog');
-    
-    const confirmed = window.confirm(
+
+    const confirmed = await ask(
       `Are you sure you want to delete ${selectedWorkspaces.size} workspace(s) from your Path?\n\n` +
       `This will remove the following workspace references:\n  - ${names}\n\n` +
-      `Note: This only removes the workspace reference from VS Code's history. ` +
-      `Your actual project files will NOT be deleted.`
+      `Note: This only removes the workspace reference from VS Code:'s history. ` +
+      `Your actual project files will NOT be deleted.`,
+      {
+        title: 'Delete Workspaces',
+        kind: 'warning'
+      }
     );
 
     console.log('[Dashboard] Confirmation result:', confirmed);

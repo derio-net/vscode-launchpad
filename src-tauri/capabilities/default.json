@@ -8,6 +8,9 @@
   "permissions": [
     "core:default",
     "shell:allow-open",
+    "dialog:allow-ask",
+    "dialog:allow-message",
+    "dialog:allow-confirm",
     {
       "identifier": "fs:allow-read",
       "allow": [{"path": "$WORKSPACES_MOUNT_POINT"}, {"path": "$WORKSPACES_MOUNT_POINT/**"}]
