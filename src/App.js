@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
-import { getWorkspaces, waitForApi, checkHealth } from './api/client';
+import { getWorkspaces, waitForApi } from './api/client';
 import './App.css';
 
 function App() {
@@ -45,10 +45,19 @@ function App() {
   // Memoize workspaces to ensure stable reference for Dashboard's useEffect
   const memoizedWorkspaces = React.useMemo(() => workspaces, [workspaces]);
 
-  // Fetch workspaces on initial load
+  // Wait for sidecar API then fetch workspaces on initial load
   useEffect(() => {
-    fetchWorkspaces();
-  }, []);
+    const init = async () => {
+      const ready = await waitForApi(15000, 500);
+      if (ready) {
+        fetchWorkspaces();
+      } else {
+        setLoading(false);
+        setError('Failed to load workspaces: Backend service did not start in time. Please try again.');
+      }
+    };
+    init();
+  }, [retryCount]);
 
 
 

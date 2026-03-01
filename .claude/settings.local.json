@@ -8,7 +8,8 @@
       "Bash(openspec instructions design --change \"frontend-redesign\" --json)",
       "Bash(openspec instructions specs --change \"frontend-redesign\" --json)",
       "Bash(openspec instructions tasks --change \"frontend-redesign\" --json)",
-      "Bash(openspec instructions apply --change \"frontend-redesign\" --json)"
+      "Bash(openspec instructions apply --change \"frontend-redesign\" --json)",
+      "Bash(cargo check)"
     ]
   }
 }

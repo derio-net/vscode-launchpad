@@ -1,6 +1,6 @@
 .app {
   min-height: 100vh;
-  padding: 20px;
+  padding: 24px;
 }
 
 /* Loading State */
@@ -10,16 +10,17 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  gap: 16px;
+  gap: 20px;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e0e0e0;
-  border-top-color: #1976d2;
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 
 @keyframes spin {
@@ -29,14 +30,17 @@
 }
 
 .loading-text {
-  font-size: 1.2rem;
-  color: #333;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
   font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
 }
 
 .loading-subtext {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
 }
 
 /* Error State */
@@ -46,36 +50,45 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  gap: 16px;
-  padding: 20px;
+  gap: 20px;
+  padding: 24px;
   text-align: center;
 }
 
 .error-icon {
   font-size: 48px;
+  filter: drop-shadow(0 0 12px rgba(244, 112, 103, 0.3));
 }
 
 .error-message {
-  font-size: 1.1rem;
-  color: #d32f2f;
-  max-width: 400px;
+  font-size: 1rem;
+  color: var(--danger);
+  max-width: 420px;
+  line-height: 1.6;
+  font-weight: 400;
 }
 
 .retry-button {
-  padding: 10px 24px;
-  background-color: #1976d2;
-  color: white;
+  padding: 10px 28px;
+  background: linear-gradient(135deg, var(--accent-muted), var(--accent));
+  color: var(--bg-primary);
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 8px rgba(86, 212, 200, 0.2);
+  letter-spacing: 0.02em;
 }
 
 .retry-button:hover {
-  background-color: #1565c0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(86, 212, 200, 0.3);
 }
 
 .retry-button:active {
-  background-color: #0d47a1;
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(86, 212, 200, 0.2);
 }

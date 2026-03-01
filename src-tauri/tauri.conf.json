@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "VS Code Workspace Dashboard",
   "version": "1.0.0",
-  "identifier": "com.vscodeworkspacedashboard.app",
+  "identifier": "com.vscodeworkspacedashboard.desktop",
   "build": {
     "frontendDist": "../public",
     "devUrl": "http://localhost:3020",
@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' http://localhost:3010 http://localhost:3020; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+      "csp": "default-src 'self'; connect-src 'self' http://127.0.0.1:3010 http://localhost:3010 http://127.0.0.1:3020 http://localhost:3020; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
     }
   },
   "bundle": {

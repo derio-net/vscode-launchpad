@@ -1,66 +1,90 @@
 .dashboard {
-  max-width: 1400px;
+  max-width: 1480px;
   margin: 0 auto;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 30px;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
 .dashboard-header {
-  margin-bottom: 30px;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 20px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
 }
 
 .dashboard-header h1 {
-  font-size: 2rem;
-  color: #333;
-  margin-bottom: 10px;
+  font-family: var(--font-sans);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Decorative accent dot before heading */
+.dashboard-header h1::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  flex-shrink: 0;
 }
 
 .workspace-count {
-  font-size: 1rem;
-  color: #666;
-  margin-bottom: 15px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  letter-spacing: 0.01em;
 }
 
 .info-banner {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background-color: #e3f2fd;
-  border-left: 4px solid #1976d2;
+  background-color: var(--accent-subtle);
+  border-left: 3px solid var(--accent-muted);
   padding: 12px 16px;
-  border-radius: 4px;
-  margin-top: 15px;
+  border-radius: var(--radius-sm);
+  margin-top: 16px;
 }
 
 .info-icon {
-  font-size: 1.2rem;
+  font-size: 1rem;
   flex-shrink: 0;
+  line-height: 1.5;
 }
 
 .info-text {
-  font-size: 0.9rem;
-  color: #333;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.5;
 }
 
 .info-note {
   display: block;
-  font-size: 0.85rem;
-  color: #666;
+  font-size: 0.8rem;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
-/* Dashboard toolbar with delete button */
+/* Dashboard toolbar */
 .dashboard-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
@@ -74,57 +98,65 @@
   flex: 0 0 auto;
   min-width: 120px;
   padding: 10px 20px;
-  background-color: #d32f2f;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  background-color: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, opacity 0.2s;
+  transition: all var(--transition-base);
+  letter-spacing: 0.01em;
 }
 
 .delete-button:hover:not(:disabled) {
-  background-color: #b71c1c;
+  background-color: var(--danger-muted);
+  border-color: var(--danger-hover);
+  color: var(--danger-hover);
+  box-shadow: 0 0 16px rgba(244, 112, 103, 0.1);
 }
 
 .delete-button:disabled {
-  background-color: #ccc;
+  border-color: var(--border);
+  color: var(--text-muted);
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
-/* Selection count display */
+/* Selection count */
 .selection-count {
-  color: #1976d2;
+  color: var(--accent);
   font-weight: 500;
 }
 
-/* Notification styles */
+/* Notifications */
 .notification {
   padding: 12px 16px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   margin-bottom: 20px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   animation: slideIn 0.3s ease-out;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .notification-success {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border-left: 4px solid #4caf50;
+  background-color: var(--success-muted);
+  color: var(--success);
+  border-left: 3px solid var(--success);
 }
 
 .notification-error {
-  background-color: #ffebee;
-  color: #c62828;
-  border-left: 4px solid #f44336;
+  background-color: var(--danger-muted);
+  color: var(--danger);
+  border-left: 3px solid var(--danger);
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -135,10 +167,12 @@
 @media (max-width: 768px) {
   .dashboard {
     padding: 20px;
+    border-radius: var(--radius-md);
+    margin: 0 4px;
   }
 
   .dashboard-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
 
   .dashboard-toolbar {

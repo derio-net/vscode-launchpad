@@ -3,7 +3,7 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex;
 use tokio::time::interval;
-use tauri_plugin_shell::ShellExt;
+use tauri_plugin_opener::OpenerExt;
 
 mod menu;
 mod tray;
@@ -12,8 +12,8 @@ mod window_state;
 // Tauri command to open VS Code: with a URI
 #[tauri::command]
 async fn open_vscode(app: AppHandle, uri: String) -> Result<(), String> {
-    app.shell()
-        .open(&uri, None)
+    app.opener()
+        .open_url(&uri, None::<&str>)
         .map_err(|e| format!("Failed to open VS Code: {}", e))?;
     Ok(())
 }
@@ -151,6 +151,7 @@ pub fn run() {
         .manage(SidecarState::new())
         .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
@@ -162,7 +163,7 @@ pub fn run() {
 
             // Spawn sidecar on startup
             match spawn_sidecar(app.app_handle(), port) {
-                Ok(mut child) => {
+                Ok(child) => {
                     log::info!("Sidecar spawned successfully on port {}", port);
 
                     // Store child process for cleanup

@@ -1,12 +1,13 @@
 .search-filter {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   align-items: flex-end;
   flex-wrap: wrap;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  margin-bottom: 20px;
+  padding: 16px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
 }
 
 .filter-group {
@@ -18,46 +19,69 @@
 }
 
 .filter-group label {
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
   font-weight: 500;
-  color: #555;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .search-input,
 .type-filter {
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-family: inherit;
-  transition: border-color 0.2s;
+  padding: 9px 14px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
 }
 
 .search-input:focus,
 .type-filter:focus {
   outline: none;
-  border-color: #1976d2;
+  border-color: var(--accent-muted);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.type-filter {
+  cursor: pointer;
+}
+
+.type-filter option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .clear-button {
-  padding: 10px 20px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.95rem;
+  padding: 9px 18px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all var(--transition-fast);
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
 .clear-button:hover {
-  background-color: #d32f2f;
+  background-color: var(--danger-muted);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .clear-button:active {
-  background-color: #c62828;
+  background-color: rgba(244, 112, 103, 0.2);
 }
 
 @media (max-width: 768px) {

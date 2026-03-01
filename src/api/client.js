@@ -18,7 +18,7 @@ const validatedPort = Number.parseInt(API_PORT, 10);
 if (Number.isNaN(validatedPort) || validatedPort < 1 || validatedPort > 65535) {
   console.warn(`Invalid API port: ${API_PORT}, defaulting to 3010`);
 }
-const API_BASE_URL = `http://localhost:${validatedPort || 3010}`;
+const API_BASE_URL = `http://127.0.0.1:${validatedPort || 3010}`;
 
 // Maximum retry attempts
 const MAX_RETRIES = 3;
