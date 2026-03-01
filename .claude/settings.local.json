@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build)",
+      "Bash(openspec new change \"frontend-redesign\")",
+      "Bash(openspec status --change \"frontend-redesign\")",
+      "Bash(openspec status --change \"frontend-redesign\" --json)",
+      "Bash(openspec instructions design --change \"frontend-redesign\" --json)",
+      "Bash(openspec instructions specs --change \"frontend-redesign\" --json)",
+      "Bash(openspec instructions tasks --change \"frontend-redesign\" --json)",
+      "Bash(openspec instructions apply --change \"frontend-redesign\" --json)"
+    ]
+  }
+}
