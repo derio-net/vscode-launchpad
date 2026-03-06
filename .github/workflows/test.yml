@@ -19,13 +19,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run frontend unit tests
-        run: npm test -- --watchAll=false --coverage --coverageReporters=text --coverageReporters=lcov
+        run: npm test -- --watchAll=false
         env:
           CI: true
 
@@ -33,14 +32,6 @@ jobs:
         run: npm run test:server
         env:
           CI: true
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          files: ./coverage/lcov.info
-          flags: frontend
-          fail_ci_if_error: false
 
   e2e-tests:
     name: E2E Tests
@@ -56,10 +47,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
