@@ -12,9 +12,13 @@ let workspacesCache = [];
  */
 const getWorkspaceStoragePath = () => {
   // Allow override via environment variable
-  if (process.env.WORKSPACES_PATH) {
-    const overridePath = path.normalize(process.env.WORKSPACES_PATH);
-    console.log(`Using WORKSPACES_PATH override: ${overridePath}`);
+  // WORKSPACES_MOUNT_POINT is the canonical variable (used by .env, Tauri, and Docker)
+  // WORKSPACES_PATH is kept as a legacy fallback for backward compatibility
+  const envOverride = process.env.WORKSPACES_MOUNT_POINT || process.env.WORKSPACES_PATH;
+  if (envOverride) {
+    const overridePath = path.normalize(envOverride);
+    const varName = process.env.WORKSPACES_MOUNT_POINT ? 'WORKSPACES_MOUNT_POINT' : 'WORKSPACES_PATH';
+    console.log(`Using ${varName} override: ${overridePath}`);
     return overridePath;
   }
 

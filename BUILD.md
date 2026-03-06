@@ -195,7 +195,7 @@ vscode-workspace-dashboard/
 
 - `PORT`: Backend server port (default: 3010)
 - `HOST`: Backend server host (default: 127.0.0.1)
-- `WORKSPACES_PATH`: Override workspace storage path
+- `WORKSPACES_MOUNT_POINT`: Override workspace storage path
 - `LOG_LEVEL`: Logging level (debug, info, warn, error)
 
 ### Desktop App

@@ -90,9 +90,9 @@ This will:
 
 2. Update `.env` with your workspace path:
    ```bash
-   # Edit .env and set WORKSPACES_PATH to your VS Code workspace storage directory
+   # Edit .env and set WORKSPACES_MOUNT_POINT to your VS Code workspace storage directory
    # Example for macOS:
-   WORKSPACES_PATH=/Users/username/Library/Application\ Support/Code/User/workspaceStorage
+   WORKSPACES_MOUNT_POINT=/Users/username/Library/Application\ Support/Code/User/workspaceStorage
    ```
 
 3. Start the application:
@@ -114,13 +114,13 @@ This will:
 The following environment variables can be set in `.env`:
 
 - `PORT`: Port to expose the application on (default: 3010)
-- `WORKSPACES_PATH`: Path to VS Code workspaces directory on the host (required for Docker)
+- `WORKSPACES_MOUNT_POINT`: Path to VS Code workspaces directory on the host (required for Docker)
 
 #### Volume Mounting
 
 The Docker container mounts your VS Code workspaces directory as read-only. This allows the dashboard to access your workspaces without modifying them.
 
-**Important**: Ensure the `WORKSPACES_PATH` in `.env` points to the correct directory on your system.
+**Important**: Ensure the `WORKSPACES_MOUNT_POINT` in `.env` points to the correct directory on your system.
 
 ### Opening Workspaces
 
@@ -330,7 +330,7 @@ When running in Docker, the application listens on `0.0.0.0` to accept connectio
   - **Windows**: Check `%APPDATA%\Code\User\workspaceStorage\`
   - **Linux**: `ls ~/.config/Code/User/workspaceStorage/`
 - Check the server logs for any error messages
-- You can override the path using the `WORKSPACES_PATH` environment variable
+- You can override the path using the `WORKSPACES_MOUNT_POINT` environment variable
 
 ### Server won't start
 
@@ -347,7 +347,7 @@ When running in Docker, the application listens on `0.0.0.0` to accept connectio
 
 #### Container won't start
 - Check the logs: `docker-compose logs`
-- Ensure the `WORKSPACES_PATH` in `.env` is correct and accessible
+- Ensure the `WORKSPACES_MOUNT_POINT` in `.env` is correct and accessible
 - Verify the path exists on your system: `ls -la /path/to/workspaces`
 
 #### Permission denied errors

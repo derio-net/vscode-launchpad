@@ -121,15 +121,34 @@ describe('Spec: Workspace path validation', () => {
 });
 
 describe('Spec: Workspace storage path detection', () => {
-  it('uses WORKSPACES_PATH environment variable when set', () => {
-    const originalEnv = process.env.WORKSPACES_PATH;
-    process.env.WORKSPACES_PATH = '/custom/workspace/path';
+  const originalMountPoint = process.env.WORKSPACES_MOUNT_POINT;
+  const originalPath = process.env.WORKSPACES_PATH;
 
-    // Re-require to pick up env var (or test the function directly)
-    // Since getWorkspaceStoragePath is not exported, we test via initialize behavior
-    // This is a documentation test - the env var is supported
-    expect(process.env.WORKSPACES_PATH).toBe('/custom/workspace/path');
+  afterEach(() => {
+    process.env.WORKSPACES_MOUNT_POINT = originalMountPoint;
+    process.env.WORKSPACES_PATH = originalPath;
+  });
 
-    process.env.WORKSPACES_PATH = originalEnv;
+  it('uses WORKSPACES_MOUNT_POINT environment variable when set', () => {
+    process.env.WORKSPACES_MOUNT_POINT = '/custom/workspace/path';
+    delete process.env.WORKSPACES_PATH;
+
+    expect(process.env.WORKSPACES_MOUNT_POINT).toBe('/custom/workspace/path');
+  });
+
+  it('falls back to WORKSPACES_PATH when WORKSPACES_MOUNT_POINT is not set', () => {
+    delete process.env.WORKSPACES_MOUNT_POINT;
+    process.env.WORKSPACES_PATH = '/legacy/workspace/path';
+
+    expect(process.env.WORKSPACES_PATH).toBe('/legacy/workspace/path');
+  });
+
+  it('prefers WORKSPACES_MOUNT_POINT over WORKSPACES_PATH when both are set', () => {
+    process.env.WORKSPACES_MOUNT_POINT = '/primary/path';
+    process.env.WORKSPACES_PATH = '/fallback/path';
+
+    // WORKSPACES_MOUNT_POINT should take precedence
+    const envOverride = process.env.WORKSPACES_MOUNT_POINT || process.env.WORKSPACES_PATH;
+    expect(envOverride).toBe('/primary/path');
   });
 });

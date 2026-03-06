@@ -10,7 +10,9 @@ services:
       - NODE_ENV=production
       - DASHBOARD_PORT=3010
       - HOST=0.0.0.0
-      - WORKSPACES_PATH=/workspaces
+      # Inside the container, the app reads WORKSPACES_MOUNT_POINT to find workspaces.
+      # The host path (set in .env) is mounted to /workspaces, so we point the app there.
+      - WORKSPACES_MOUNT_POINT=/workspaces
     volumes:
       - "${WORKSPACES_MOUNT_POINT:-./workspaces}:/workspaces:ro"
     restart: unless-stopped

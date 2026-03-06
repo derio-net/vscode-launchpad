@@ -65,7 +65,7 @@ jobs:
           sleep 3
         env:
           DASHBOARD_PORT: 3010
-          WORKSPACES_PATH: /tmp/test-workspaces
+          WORKSPACES_MOUNT_POINT: /tmp/test-workspaces
 
       - name: Start dev server
         run: |
