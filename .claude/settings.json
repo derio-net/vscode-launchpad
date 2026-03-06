@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(DASHBOARD_PORT=3099 HOST=127.0.0.1 timeout 5 \"/Applications/VS Code Workspace Dashboard.app/Contents/MacOS/sidecar-vscode-dashboard\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(open \"/Users/user/Docs/projects/SIDE_PROJECTS/vs_code_workspace_dashboard/src-tauri/target/release/bundle/macos/VS Code Workspace Dashboard.app\")",
+      "Bash(curl -s http://127.0.0.1:3010/health)",
+      "Bash(curl -s http://127.0.0.1:3010/api/workspaces)"
+    ]
+  }
+}

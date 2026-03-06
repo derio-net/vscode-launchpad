@@ -9,13 +9,35 @@ mod menu;
 mod tray;
 mod window_state;
 
-// Tauri command to open VS Code: with a URI
+// Tauri command to open VS Code with a URI
 #[tauri::command]
 async fn open_vscode(app: AppHandle, uri: String) -> Result<(), String> {
     app.opener()
         .open_url(&uri, None::<&str>)
         .map_err(|e| format!("Failed to open VS Code: {}", e))?;
     Ok(())
+}
+
+// Tauri command to get backend diagnostics
+#[tauri::command]
+async fn get_diagnostics(app: AppHandle) -> Result<serde_json::Value, String> {
+    let state: State<SidecarState> = app.state();
+    let port = state.sidecar_port;
+    let sidecar_path = resolve_sidecar_path(&app).unwrap_or_default();
+    let sidecar_exists = sidecar_path.exists();
+    let health_ok = check_sidecar_health(port).await;
+
+    Ok(serde_json::json!({
+        "sidecar_path": sidecar_path.to_string_lossy(),
+        "sidecar_exists": sidecar_exists,
+        "sidecar_port": port,
+        "health_check": health_ok,
+        "api_url": format!("http://127.0.0.1:{}", port),
+        "platform": std::env::consts::OS,
+        "arch": std::env::consts::ARCH,
+        "dev_mode": cfg!(dev),
+    })
+    )
 }
 
 // Sidecar state management
@@ -46,35 +68,42 @@ async fn check_sidecar_health(port: u16) -> bool {
     }
 }
 
-// Spawn sidecar process
-fn spawn_sidecar(app: &AppHandle, port: u16) -> Result<std::process::Child, String> {
-    // In dev mode, the resource directory is different - use the project root
-    let sidecar_path = if cfg!(dev) {
+// Resolve the sidecar binary path
+fn resolve_sidecar_path(_app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    if cfg!(dev) {
         // In dev mode, look for the binary relative to the project root
         // current_dir() is the workspace root, binaries are in src-tauri/binaries/
         std::env::current_dir()
-            .map_err(|e| format!("Failed to get current dir: {}", e))?
-            .join("binaries")
-            .join(if cfg!(target_os = "macos") {
-                if cfg!(target_arch = "aarch64") {
-                    "sidecar-vscode-dashboard-aarch64-apple-darwin"
+            .map_err(|e| format!("Failed to get current dir: {}", e))
+            .map(|dir| {
+                dir.join("binaries").join(if cfg!(target_os = "macos") {
+                    if cfg!(target_arch = "aarch64") {
+                        "sidecar-vscode-dashboard-aarch64-apple-darwin"
+                    } else {
+                        "sidecar-vscode-dashboard-macos-x64"
+                    }
+                } else if cfg!(target_os = "windows") {
+                    "sidecar-vscode-dashboard-win-x64.exe"
                 } else {
-                    "sidecar-vscode-dashboard-macos-x64"
-                }
-            } else if cfg!(target_os = "windows") {
-                "sidecar-vscode-dashboard-win-x64.exe"
-            } else {
-                "sidecar-vscode-dashboard-linux-x64"
+                    "sidecar-vscode-dashboard-linux-x64"
+                })
             })
     } else {
-        // In production, use the resource directory
-        app.path()
-            .resolve(
-                "binaries/sidecar-vscode-dashboard",
-                tauri::path::BaseDirectory::Resource,
-            )
-            .map_err(|e| format!("Failed to resolve sidecar path: {}", e))?
-    };
+        // In production, Tauri places externalBin sidecars next to the main executable
+        // (e.g. Contents/MacOS/ on macOS), not in the Resources directory
+        std::env::current_exe()
+            .map_err(|e| format!("Failed to get current executable path: {}", e))
+            .map(|exe| {
+                exe.parent()
+                    .expect("Executable must have a parent directory")
+                    .join("sidecar-vscode-dashboard")
+            })
+    }
+}
+
+// Spawn sidecar process
+fn spawn_sidecar(app: &AppHandle, port: u16) -> Result<std::process::Child, String> {
+    let sidecar_path = resolve_sidecar_path(app)?;
 
     log::info!("Attempting to spawn sidecar from: {:?}", sidecar_path);
 
@@ -213,7 +242,7 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![open_vscode])
+        .invoke_handler(tauri::generate_handler![open_vscode, get_diagnostics])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

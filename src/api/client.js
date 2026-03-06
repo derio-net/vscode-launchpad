@@ -200,6 +200,37 @@ export function getEnvironment() {
   return isTauri() ? 'tauri' : 'browser';
 }
 
+/**
+ * Get diagnostics information for troubleshooting
+ * In Tauri mode, calls the Rust backend for sidecar info.
+ * In browser mode, returns basic connection diagnostics.
+ * @returns {Promise<Object>} - Diagnostics data
+ */
+export async function getDiagnostics() {
+  const diag = {
+    environment: getEnvironment(),
+    api_url: API_BASE_URL,
+    api_port: validatedPort || 3010,
+    timestamp: new Date().toISOString(),
+  };
+
+  // Check API health
+  diag.health_check = await checkHealth();
+
+  // In Tauri mode, call the Rust get_diagnostics command
+  if (isTauri()) {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const tauriDiag = await invoke('get_diagnostics');
+      return { ...diag, ...tauriDiag };
+    } catch (e) {
+      diag.tauri_error = e.toString();
+    }
+  }
+
+  return diag;
+}
+
 // Default export
 export default {
   request: apiRequest,
@@ -209,5 +240,6 @@ export default {
   deleteWorkspaces,
   checkHealth,
   waitForApi,
-  getEnvironment
+  getEnvironment,
+  getDiagnostics
 };

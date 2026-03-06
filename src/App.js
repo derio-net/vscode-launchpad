@@ -1,7 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
-import { getWorkspaces, waitForApi } from './api/client';
+import { getWorkspaces, waitForApi, getDiagnostics } from './api/client';
 import './App.css';
+
+function DiagnosticsPanel() {
+  const [diagnostics, setDiagnostics] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const runDiagnostics = async () => {
+    setLoading(true);
+    try {
+      const data = await getDiagnostics();
+      setDiagnostics(data);
+      setExpanded(true);
+    } catch (e) {
+      setDiagnostics({ error: e.toString() });
+      setExpanded(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!expanded) {
+    return (
+      <button
+        className="diagnostics-toggle"
+        onClick={runDiagnostics}
+        disabled={loading}
+      >
+        {loading ? 'Running diagnostics...' : 'Show Diagnostics'}
+      </button>
+    );
+  }
+
+  return (
+    <div className="diagnostics-panel">
+      <div className="diagnostics-header">
+        <span>Diagnostics</span>
+        <button className="diagnostics-close" onClick={() => setExpanded(false)}>
+          Hide
+        </button>
+      </div>
+      <div className="diagnostics-grid">
+        {diagnostics && Object.entries(diagnostics).map(([key, value]) => (
+          <React.Fragment key={key}>
+            <span className="diagnostics-key">{key}</span>
+            <span className={`diagnostics-value ${
+              value === true ? 'diagnostics-ok' :
+              value === false ? 'diagnostics-fail' : ''
+            }`}>
+              {typeof value === 'boolean' ? (value ? 'OK' : 'FAIL') : String(value)}
+            </span>
+          </React.Fragment>
+        ))}
+      </div>
+      <button className="diagnostics-toggle" onClick={runDiagnostics} disabled={loading}>
+        {loading ? 'Running...' : 'Refresh'}
+      </button>
+    </div>
+  );
+}
 
 function App() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -10,22 +69,19 @@ function App() {
   const [isFetching, setIsFetching] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Debug logging removed - fix verified
-
   // Fetch workspaces from API
   const fetchWorkspaces = async () => {
     if (isFetching) {
       console.log('Already fetching workspaces, skipping...');
       return;
     }
-    
+
     console.log('Starting fetchWorkspaces...');
     try {
       setIsFetching(true);
       const data = await getWorkspaces();
       console.log('Workspaces fetched:', data.length);
       setWorkspaces(data);
-      // Only show error if the API actually failed, not for empty results
       setError(null);
     } catch (err) {
       console.error('Error fetching workspaces:', err);
@@ -59,8 +115,6 @@ function App() {
     init();
   }, [retryCount]);
 
-
-
   // Handle retry button click
   const handleRetry = () => {
     setRetryCount(prev => prev + 1);
@@ -89,6 +143,7 @@ function App() {
           <button className="retry-button" onClick={handleRetry}>
             Retry Connection
           </button>
+          <DiagnosticsPanel />
         </div>
       </div>
     );
