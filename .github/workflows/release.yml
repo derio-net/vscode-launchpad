@@ -153,7 +153,7 @@ jobs:
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'VS Code Workspace Dashboard ${{ github.ref_name }}'
+          releaseName: 'VS Code Launchpad ${{ github.ref_name }}'
           releaseBody: 'See the assets to download and install this version.'
           releaseDraft: true
           prerelease: ${{ contains(github.ref_name, 'beta') }}

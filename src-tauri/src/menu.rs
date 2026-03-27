@@ -3,7 +3,7 @@ use tauri::Emitter;
 use tauri::Manager;
 
 pub fn create_menu(app: &tauri::AppHandle) -> Menu<tauri::Wry> {
-    let app_name = "VS Code Workspace Dashboard";
+    let app_name = "VS Code Launchpad";
 
     // macOS specific menu
     #[cfg(target_os = "macos")]

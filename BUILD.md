@@ -1,6 +1,6 @@
 # Build Instructions
 
-This document provides instructions for building the VS Code Workspace Dashboard from source.
+This document provides instructions for building the VS Code Launchpad from source.
 
 ## Prerequisites
 
@@ -84,8 +84,8 @@ rustup update
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/derio-net/vs_code_workspace_dashboard.git
-   cd vscode-workspace-dashboard
+   git clone https://github.com/derio-net/vscode-launchpad.git
+   cd vscode-launchpad
    ```
 
 2. **Install Node.js dependencies**:
@@ -151,13 +151,11 @@ Binaries will be output to `src-tauri/binaries/`.
 npm run tauri build
 ```
 
-The built application will be in `src-tauri/target/release/bundle/`.
+This builds the desktop app **for your current OS only**. The built application will be in `src-tauri/target/release/bundle/`.
 
-#### Build for All Platforms
+#### Cross-Platform Builds (CI)
 
-This requires running the build on each platform (macOS, Windows, Linux) or using cross-compilation.
-
-See [`.github/workflows/release.yml`](.github/workflows/release.yml) for the automated build process.
+Cross-platform builds for all targets (macOS x64/ARM64, Windows x64, Linux x64) run automatically via GitHub Actions when a version tag is pushed. See [`.github/workflows/release.yml`](.github/workflows/release.yml) for the automated build process.
 
 ### Build Outputs
 
@@ -170,7 +168,7 @@ After building, you'll find the following in `src-tauri/target/release/bundle/`:
 ## Project Structure
 
 ```
-vscode-workspace-dashboard/
+vscode-launchpad/
 ├── .github/workflows/      # GitHub Actions CI/CD
 ├── public/                 # Static assets (built frontend)
 ├── server/                 # Node.js backend
@@ -193,7 +191,7 @@ vscode-workspace-dashboard/
 
 ### Development
 
-- `PORT`: Backend server port (default: 3010)
+- `DASHBOARD_PORT`: Backend server port (default: 3010)
 - `HOST`: Backend server host (default: 127.0.0.1)
 - `WORKSPACES_MOUNT_POINT`: Override workspace storage path
 - `LOG_LEVEL`: Logging level (debug, info, warn, error)

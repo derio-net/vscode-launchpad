@@ -1,5 +1,5 @@
 /**
- * API Client for VS Code Workspace Dashboard
+ * API Client for VS Code Launchpad
  * 
  * This client supports both Tauri desktop and browser development modes.
  * In Tauri mode, it uses the Tauri HTTP plugin for secure communication.

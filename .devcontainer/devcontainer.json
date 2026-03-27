@@ -1,0 +1,23 @@
+{
+  "name": "VS Code Launchpad",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [3010, 3020],
+  "postCreateCommand": "npm install && npx playwright install --with-deps chromium",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "ms-playwright.playwright"
+      ],
+      "settings": {
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  "remoteEnv": {
+    "WORKSPACES_MOUNT_POINT": "/tmp/test-workspaces"
+  }
+}

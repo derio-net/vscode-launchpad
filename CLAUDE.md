@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-VS Code Workspace Dashboard — a desktop (Tauri) and web app for viewing/managing VS Code workspaces. React frontend + Express backend + Tauri/Rust desktop shell. The backend discovers workspaces from VS Code's `workspaceStorage/` directory and exposes them via REST API.
+VS Code Launchpad — a desktop (Tauri) and web app for viewing/managing VS Code workspaces. React frontend + Express backend + Tauri/Rust desktop shell. The backend discovers workspaces from VS Code's `workspaceStorage/` directory and exposes them via REST API.
 
 ## Commands
 

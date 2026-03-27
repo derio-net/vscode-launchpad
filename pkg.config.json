@@ -1,7 +1,7 @@
 {
   "name": "sidecar-vscode-dashboard",
   "version": "1.0.0",
-  "description": "VS Code Workspace Dashboard Sidecar",
+  "description": "VS Code Launchpad Sidecar",
   "main": "server/index.js",
   "bin": "server/index.js",
   "pkg": {

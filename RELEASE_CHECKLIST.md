@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this checklist when preparing a new release of VS Code Workspace Dashboard.
+Use this checklist when preparing a new release of VS Code Launchpad.
 
 ## Pre-Release
 

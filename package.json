@@ -1,7 +1,7 @@
 {
-  "name": "vscode-workspace-dashboard",
+  "name": "vscode-launchpad",
   "version": "1.0.0",
-  "description": "A dashboard to view and manage VS Code workspaces",
+  "description": "View, search, and open all your VS Code workspaces from one place",
   "main": "server/index.js",
   "scripts": {
     "start": "npm run build && node server/index.js",

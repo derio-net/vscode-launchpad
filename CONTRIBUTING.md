@@ -1,4 +1,4 @@
-# Contributing to VS Code Workspace Dashboard
+# Contributing to VS Code Launchpad
 
 Thanks for your interest in contributing! This document provides guidelines for contributing to this project.
 
@@ -7,8 +7,8 @@ Thanks for your interest in contributing! This document provides guidelines for 
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/your-username/vs_code_workspace_dashboard.git
-   cd vs_code_workspace_dashboard
+   git clone https://github.com/your-username/vscode-launchpad.git
+   cd vscode-launchpad
    ```
 3. Install dependencies:
    ```bash
@@ -48,7 +48,7 @@ npm run test:all
 npm run test:e2e
 ```
 
-Please ensure all tests pass before submitting a PR.
+Please ensure all tests pass before submitting a PR. See [docs/TESTING.md](docs/TESTING.md) for detailed test documentation.
 
 ### Building
 
@@ -59,6 +59,48 @@ npm run build:react
 # Build Tauri desktop app
 npm run tauri:build
 ```
+
+## Development Workflow — OpenSpec
+
+This project uses the **OpenSpec (OPSX)** plugin for structured, spec-driven development. All feature work follows a defined artifact workflow.
+
+### Prerequisites
+
+- [Claude Code](https://claude.ai/code) with the OpenSpec plugin installed
+
+### Workflow
+
+Use the `/opsx:*` slash commands to drive development:
+
+1. **`/opsx:new`** — Start a new change (creates a change directory under `openspec/changes/`)
+2. **`/opsx:continue`** — Create the next artifact in sequence
+3. **`/opsx:ff`** — Fast-forward: generate all artifacts through tasks in one pass
+4. **`/opsx:apply`** — Implement tasks from the change's `tasks.md`
+5. **`/opsx:verify`** — Verify implementation matches the change artifacts
+6. **`/opsx:archive`** — Archive a completed change
+
+### Artifact Sequence
+
+The artifact sequence is strict: **proposal** → **design** → **delta specs** → **tasks** → **implementation**. Use `/opsx:continue` to advance one step at a time, or `/opsx:ff` to generate all artifacts in one go.
+
+### Directory Structure
+
+```
+openspec/
+├── specs/           # Main capability specifications (source of truth)
+│   └── <capability>/
+│       └── spec.md
+└── changes/
+    ├── <active-change>/     # In-progress changes
+    │   ├── .openspec.yaml   # Metadata
+    │   ├── proposal.md      # Why this change exists
+    │   ├── design.md        # Design decisions
+    │   ├── specs/           # Delta specs (modifications to main specs)
+    │   └── tasks.md         # Implementation checklist
+    └── archive/             # Completed changes
+```
+
+For more details, see the workflow documentation in [CLAUDE.md](CLAUDE.md).
 
 ## Submitting Changes
 
@@ -84,20 +126,6 @@ We loosely follow [Conventional Commits](https://www.conventionalcommits.org/):
 - `test`: Adding or updating tests
 - `refactor`: Code change that neither fixes a bug nor adds a feature
 - `ci`: CI/CD changes
-
-## Project Structure
-
-```
-server/              # Express backend
-  index.js           # Server entry point
-  workspaceScanner.js # Workspace discovery logic
-src/                 # React frontend
-  components/        # React components
-  utils/             # Shared utilities
-e2e/                 # Playwright E2E tests
-src-tauri/           # Tauri desktop app
-openspec/            # OpenSpec specifications
-```
 
 ## Reporting Issues
 

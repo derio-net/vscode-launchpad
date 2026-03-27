@@ -164,7 +164,7 @@ workspaceScanner.initialize().then(() => {
   app.listen(PORT, HOST, () => {
     // Always log startup info regardless of LOG_LEVEL
     console.log('========================================');
-    console.log(`🚀 VS Code Workspace Dashboard running at http://${HOST}:${PORT}`);
+    console.log(`🚀 VS Code Launchpad running at http://${HOST}:${PORT}`);
     console.log('========================================');
     console.log(`📡 API Endpoints available:`);
     console.log(`   - GET  /health`);
@@ -176,7 +176,7 @@ workspaceScanner.initialize().then(() => {
     console.log('🔒 Server is only accessible from localhost for security');
     console.log('========================================');
     
-    log.info(`VS Code Workspace Dashboard running at http://${HOST}:${PORT}`);
+    log.info(`VS Code Launchpad running at http://${HOST}:${PORT}`);
     log.info('Server is only accessible from localhost for security');
   });
 }).catch(error => {

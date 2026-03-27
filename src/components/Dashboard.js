@@ -253,7 +253,7 @@ function Dashboard({ workspaces, onRefresh }) {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>VS Code Workspace Dashboard</h1>
+        <h1>VS Code Launchpad</h1>
         <p className="workspace-count">
           {filteredAndSortedWorkspaces.length} of {workspaces.length} workspaces
           {selectedWorkspaces.size > 0 && (

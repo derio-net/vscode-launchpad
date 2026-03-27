@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "VS Code Workspace Dashboard",
+  "productName": "VS Code Launchpad",
   "version": "1.0.0",
   "identifier": "com.vscodeworkspacedashboard.desktop",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "VS Code Workspace Dashboard",
+        "title": "VS Code Launchpad",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,
@@ -50,7 +50,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://api.github.com/repos/derio-net/vs_code_workspace_dashboard/releases/latest"
+        "https://api.github.com/repos/derio-net/vscode-launchpad/releases/latest"
       ],
       "dialog": true,
       "pubkey": "YOUR_UPDATER_SIGNATURE_PUBKEY_HERE"

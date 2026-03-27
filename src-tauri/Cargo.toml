@@ -1,10 +1,10 @@
 [package]
-name = "vscode-workspace-dashboard"
+name = "vscode-launchpad"
 version = "1.0.0"
-description = "VS Code Workspace Dashboard - Desktop Application"
-authors = ["VS Code Workspace Dashboard Team"]
+description = "VS Code Launchpad - Desktop Application"
+authors = ["VS Code Launchpad"]
 license = "MIT"
-repository = "https://github.com/derio-net/vs_code_workspace_dashboard"
+repository = "https://github.com/derio-net/vscode-launchpad"
 edition = "2021"
 rust-version = "1.77.2"
 
