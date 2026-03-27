@@ -29,9 +29,9 @@ test.describe('Spec: User can toggle column visibility', () => {
     await expect(nameHeader).toBeVisible({ timeout: 5000 });
   });
 
-  test('SSH Host column is visible by default', async ({ page }) => {
-    const sshHeader = page.locator('th', { hasText: 'SSH Host' });
-    await expect(sshHeader).toBeVisible({ timeout: 5000 });
+  test('Connection column is visible by default', async ({ page }) => {
+    const connectionHeader = page.locator('th', { hasText: 'Connection' });
+    await expect(connectionHeader).toBeVisible({ timeout: 5000 });
   });
 
   test('Full Path column is hidden by default', async ({ page }) => {

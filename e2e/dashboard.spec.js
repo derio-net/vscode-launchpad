@@ -12,7 +12,7 @@ test.describe('Spec: User can view dashboard with workspace list', () => {
     await page.goto('/');
 
     // Page should load without errors
-    await expect(page).toHaveTitle(/workspace dashboard/i);
+    await expect(page).toHaveTitle(/VS Code Launchpad/i);
   });
 
   test('dashboard shows loading state then workspaces', async ({ page }) => {
