@@ -165,9 +165,10 @@ jobs:
             fi
 
             # Add version to .app.tar.gz files that lack it
+            # Insert before arch segment to match other artifacts: {product}_{platform}_{version}_{arch}.app.tar.gz
             if echo "$NEW_NAME" | grep -q "\.app\.tar\.gz$"; then
               if ! echo "$NEW_NAME" | grep -q "$VERSION"; then
-                NEW_NAME=$(echo "$NEW_NAME" | sed "s/\.app\.tar\.gz$/_${VERSION}.app.tar.gz/")
+                NEW_NAME=$(echo "$NEW_NAME" | sed "s/_\([^_]*\)\.app\.tar\.gz$/_${VERSION}_\1.app.tar.gz/")
               fi
             fi
 
