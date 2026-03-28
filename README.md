@@ -15,7 +15,7 @@ View, search, and open all your VS Code workspaces from one place. A cross-platf
 - 🔄 **Auto-Refresh** — Detects new workspaces every 30 seconds
 - 💡 **Path Tooltips** — Hover over workspace names to see the full file path
 - 🐳 **Docker Support** — Deploy easily with Docker and docker-compose
-- 💻 **Desktop App** *(coming soon)* — Native app using Tauri (macOS, Windows, Linux)
+- 💻 **Desktop App** — Native app using Tauri (macOS, Windows, Linux)
 - 🔒 **Secure** — Runs only on localhost by default
 
 **Supported workspace types:** Local, Remote, SSH Remote, Dev Container, Attached Container.
@@ -47,15 +47,21 @@ docker-compose up -d
 
 See [docs/DOCKER.md](docs/DOCKER.md) for detailed Docker deployment instructions.
 
-### Desktop App (Coming Soon)
+### Desktop App
 
-Pre-built binaries are not yet available. You can build from source for your current platform:
+Build the full application from source for your current platform:
 
 ```bash
 npm run tauri:build:full
 ```
 
-This builds the desktop app for your current OS only. Cross-platform builds for all platforms (macOS, Windows, Linux) run automatically via [GitHub Actions](.github/workflows/release.yml) when a version tag is pushed. See [BUILD.md](BUILD.md) for full build instructions.
+Then install the built application:
+
+- **macOS**: Drag the `.app` from `src-tauri/target/release/bundle/macos/` into your Applications folder, or open the `.dmg`
+- **Windows**: Run the `.msi` installer from `src-tauri/target/release/bundle/msi/`
+- **Linux**: Run the `.AppImage` or install the `.deb` from `src-tauri/target/release/bundle/`
+
+Cross-platform builds for all platforms run automatically via [GitHub Actions](.github/workflows/release.yml) when a version tag is pushed. See [BUILD.md](BUILD.md) for full build instructions and prerequisites (Rust, platform-specific dependencies).
 
 ## How It Works
 

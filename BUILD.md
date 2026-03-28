@@ -126,7 +126,29 @@ This will:
 
 ## Building for Production
 
-### Build Sidecar Binary
+### Full Application Build (Recommended)
+
+This is the standard way to build and install the desktop application:
+
+```bash
+npm run tauri:build:full
+```
+
+This single command builds the sidecar backend binary and packages the Tauri desktop app for your current OS.
+
+### Installing
+
+After the build completes, find the installer in `src-tauri/target/release/bundle/`:
+
+- **macOS**: Drag the `.app` bundle into your Applications folder, or open the `.dmg` to install
+- **Windows**: Run the `.msi` or `.exe` installer
+- **Linux**: Run the `.AppImage` directly, or install the `.deb` package
+
+### Advanced: Individual Build Steps
+
+For development or CI workflows, you can run the sidecar and desktop builds separately.
+
+#### Build Sidecar Binary
 
 The sidecar is the Node.js backend bundled as a standalone executable:
 
@@ -143,27 +165,17 @@ pkg server/index.js --config pkg.config.json --targets node18-macos-x64
 
 Binaries will be output to `src-tauri/binaries/`.
 
-### Build Desktop Application
+#### Build Desktop Application Only
 
-#### Build for Current Platform
+If the sidecar binary is already built, you can build just the Tauri desktop shell:
 
 ```bash
 npm run tauri build
 ```
 
-This builds the desktop app **for your current OS only**. The built application will be in `src-tauri/target/release/bundle/`.
-
 #### Cross-Platform Builds (CI)
 
 Cross-platform builds for all targets (macOS x64/ARM64, Windows x64, Linux x64) run automatically via GitHub Actions when a version tag is pushed. See [`.github/workflows/release.yml`](.github/workflows/release.yml) for the automated build process.
-
-### Build Outputs
-
-After building, you'll find the following in `src-tauri/target/release/bundle/`:
-
-- **macOS**: `.dmg`, `.app` bundle
-- **Windows**: `.msi`, `.exe` installer
-- **Linux**: `.AppImage`, `.deb` package
 
 ## Project Structure
 
