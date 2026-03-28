@@ -52,7 +52,7 @@ See [docs/DOCKER.md](docs/DOCKER.md) for detailed Docker deployment instructions
 Pre-built binaries are not yet available. You can build from source for your current platform:
 
 ```bash
-npm run tauri:build
+npm run tauri:build:full
 ```
 
 This builds the desktop app for your current OS only. Cross-platform builds for all platforms (macOS, Windows, Linux) run automatically via [GitHub Actions](.github/workflows/release.yml) when a version tag is pushed. See [BUILD.md](BUILD.md) for full build instructions.
