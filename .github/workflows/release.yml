@@ -88,15 +88,24 @@ jobs:
         if: matrix.platform != 'windows-latest'
         run: chmod +x src-tauri/binaries/sidecar-vscode-dashboard*
 
+      - name: Warn if macOS code signing is not configured
+        if: matrix.platform == 'macos-latest' && env.APPLE_CERTIFICATE == ''
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        run: |
+          echo "::warning::macOS code signing skipped — APPLE_CERTIFICATE secret is not configured."
+          echo "To enable signing, add APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, and APPLE_SIGNING_IDENTITY secrets."
+          echo "See docs/macos-code-signing.md for setup instructions."
+
       - name: Build Tauri app
         id: tauri-build
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # To enable code signing, add the following secrets to your repository:
-          # macOS: APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY,
-          #        APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
-          # Windows: WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'VS Code Launchpad ${{ github.ref_name }}'
