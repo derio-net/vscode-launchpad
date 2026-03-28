@@ -57,7 +57,7 @@ npm run tauri:build:full
 
 Then install the built application:
 
-- **macOS**: Drag the `.app` from `src-tauri/target/release/bundle/macos/` into your Applications folder, or open the `.dmg`
+- **macOS**: Drag the `.app` from `src-tauri/target/release/bundle/macos/` into your Applications folder, or open the `.dmg`. Downloaded builds are not notarized, so macOS will block them. Remove the quarantine flag first: `/usr/bin/xattr -cr "/Applications/VS Code Launchpad.app"`
 - **Windows**: Run the `.msi` installer from `src-tauri/target/release/bundle/msi/`
 - **Linux**: Run the `.AppImage` or install the `.deb` from `src-tauri/target/release/bundle/`
 
