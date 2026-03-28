@@ -128,23 +128,33 @@ jobs:
             exit 0
           fi
 
-          # Get all assets for this release
+          # Rename all assets uploaded by this matrix job
+          # Query release assets directly rather than relying on artifactPaths
+          # (Tauri auto-generates .app.tar.gz files not listed in artifactPaths)
           ASSETS_JSON=$(gh api "repos/${{ github.repository }}/releases/$RELEASE_ID/assets")
 
-          # Iterate artifact paths safely (handles spaces in paths)
-          echo '${{ steps.tauri-build.outputs.artifactPaths }}' | jq -r '.[]' | while IFS= read -r artifact_path; do
-            OLD_NAME=$(basename "$artifact_path")
-            # Tauri uploads replace spaces with dots
-            OLD_NAME="${OLD_NAME// /.}"
-            NEW_NAME=""
+          echo "$ASSETS_JSON" | jq -r '.[] | "\(.id)\t\(.name)"' | while IFS=$'\t' read -r ASSET_ID OLD_NAME; do
+            # Skip assets already renamed by another matrix job
+            if [[ "$OLD_NAME" == *_macos_* ]] || [[ "$OLD_NAME" == *_linux_* ]] || [[ "$OLD_NAME" == *_windows_* ]]; then
+              continue
+            fi
 
-            # Insert platform label after product name
+            # Only rename assets that belong to this platform's build
+            DOMINATED=false
+            case "$PLATFORM" in
+              macos)  [[ "$OLD_NAME" == *.dmg ]] || [[ "$OLD_NAME" == *.app.tar.gz ]] && DOMINATED=true ;;
+              linux)  [[ "$OLD_NAME" == *.deb ]] || [[ "$OLD_NAME" == *.AppImage ]] || [[ "$OLD_NAME" == *.rpm ]] && DOMINATED=true ;;
+              windows) [[ "$OLD_NAME" == *.exe ]] || [[ "$OLD_NAME" == *.msi ]] && DOMINATED=true ;;
+            esac
+            if [ "$DOMINATED" != "true" ]; then
+              continue
+            fi
+
+            NEW_NAME=""
             if [[ "$OLD_NAME" == VS.Code.Launchpad_* ]]; then
               NEW_NAME="${OLD_NAME/VS.Code.Launchpad_/VS.Code.Launchpad_${PLATFORM}_}"
             elif [[ "$OLD_NAME" == VS.Code.Launchpad-* ]]; then
               NEW_NAME="${OLD_NAME/VS.Code.Launchpad-/VS.Code.Launchpad_${PLATFORM}_}"
-            elif [[ "$OLD_NAME" == *VS.Code.Launchpad* ]]; then
-              NEW_NAME="${OLD_NAME/VS.Code.Launchpad/VS.Code.Launchpad_${PLATFORM}}"
             else
               continue
             fi
@@ -154,17 +164,9 @@ jobs:
               NEW_NAME="${NEW_NAME/.app.tar.gz/_${VERSION}.app.tar.gz}"
             fi
 
-            ASSET_ID=$(echo "$ASSETS_JSON" | jq -r ".[] | select(.name == \"$OLD_NAME\") | .id")
-
-            if [ -n "$ASSET_ID" ] && [ "$ASSET_ID" != "null" ] && [ "$ASSET_ID" != "" ]; then
-              gh api "repos/${{ github.repository }}/releases/assets/$ASSET_ID" \
-                -X PATCH -f name="$NEW_NAME" > /dev/null
-              echo "Renamed: $OLD_NAME → $NEW_NAME"
-            else
-              echo "Warning: asset not found for rename: $OLD_NAME (looked for '$OLD_NAME')"
-              echo "Available assets:"
-              echo "$ASSETS_JSON" | jq -r '.[].name'
-            fi
+            gh api "repos/${{ github.repository }}/releases/assets/$ASSET_ID" \
+              -X PATCH -f name="$NEW_NAME" > /dev/null
+            echo "Renamed: $OLD_NAME → $NEW_NAME"
           done
 
   # Update release notes
