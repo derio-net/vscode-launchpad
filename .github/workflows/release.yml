@@ -120,18 +120,28 @@ jobs:
 
           VERSION="${GITHUB_REF_NAME#v}"
           TAG="${{ github.ref_name }}"
-          RELEASE_ID=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq '.id')
 
-          ARTIFACTS='${{ steps.tauri-build.outputs.artifactPaths }}'
-          for artifact_path in $(echo "$ARTIFACTS" | jq -r '.[]'); do
+          # Draft releases are not returned by /releases/tags/, must search all releases
+          RELEASE_ID=$(gh api "repos/${{ github.repository }}/releases" --jq ".[] | select(.tag_name == \"$TAG\") | .id" | head -1)
+          if [ -z "$RELEASE_ID" ]; then
+            echo "Warning: release not found for tag $TAG, skipping rename"
+            exit 0
+          fi
+
+          # Get all assets for this release
+          ASSETS_JSON=$(gh api "repos/${{ github.repository }}/releases/$RELEASE_ID/assets")
+
+          # Iterate artifact paths safely (handles spaces in paths)
+          echo '${{ steps.tauri-build.outputs.artifactPaths }}' | jq -r '.[]' | while IFS= read -r artifact_path; do
             OLD_NAME=$(basename "$artifact_path")
+            # Tauri uploads replace spaces with dots
+            OLD_NAME="${OLD_NAME// /.}"
             NEW_NAME=""
 
             # Insert platform label after product name
             if [[ "$OLD_NAME" == VS.Code.Launchpad_* ]]; then
               NEW_NAME="${OLD_NAME/VS.Code.Launchpad_/VS.Code.Launchpad_${PLATFORM}_}"
             elif [[ "$OLD_NAME" == VS.Code.Launchpad-* ]]; then
-              # RPM uses dash separator
               NEW_NAME="${OLD_NAME/VS.Code.Launchpad-/VS.Code.Launchpad_${PLATFORM}_}"
             elif [[ "$OLD_NAME" == *VS.Code.Launchpad* ]]; then
               NEW_NAME="${OLD_NAME/VS.Code.Launchpad/VS.Code.Launchpad_${PLATFORM}}"
@@ -144,15 +154,16 @@ jobs:
               NEW_NAME="${NEW_NAME/.app.tar.gz/_${VERSION}.app.tar.gz}"
             fi
 
-            ASSET_ID=$(gh api "repos/${{ github.repository }}/releases/$RELEASE_ID/assets" \
-              --jq ".[] | select(.name == \"$OLD_NAME\") | .id")
+            ASSET_ID=$(echo "$ASSETS_JSON" | jq -r ".[] | select(.name == \"$OLD_NAME\") | .id")
 
-            if [ -n "$ASSET_ID" ] && [ "$ASSET_ID" != "null" ]; then
+            if [ -n "$ASSET_ID" ] && [ "$ASSET_ID" != "null" ] && [ "$ASSET_ID" != "" ]; then
               gh api "repos/${{ github.repository }}/releases/assets/$ASSET_ID" \
                 -X PATCH -f name="$NEW_NAME" > /dev/null
               echo "Renamed: $OLD_NAME → $NEW_NAME"
             else
-              echo "Warning: asset not found for rename: $OLD_NAME"
+              echo "Warning: asset not found for rename: $OLD_NAME (looked for '$OLD_NAME')"
+              echo "Available assets:"
+              echo "$ASSETS_JSON" | jq -r '.[].name'
             fi
           done
 
