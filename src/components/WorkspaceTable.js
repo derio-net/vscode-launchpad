@@ -3,25 +3,29 @@ import './WorkspaceTable.css';
 import { open } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
 import { extractConnectionInfo, extractWorkspacePath } from '../utils/workspaceUtils';
+import { getAggregateState } from '../hooks/useClaudeSessions';
 
 const COLUMNS = [
   { key: 'select', label: '' },
   { key: 'name', label: 'Name' },
   { key: 'lastAccessed', label: 'Last Accessed' },
   { key: 'type', label: 'Type' },
+  { key: 'claude', label: 'Claude' },
   { key: 'connection', label: 'Connection' },
   { key: 'workspacePath', label: 'Path' },
   { key: 'path', label: 'Full Path' }
 ];
 
-function WorkspaceTable({ 
-  workspaces, 
-  sortConfig, 
-  onSort, 
+function WorkspaceTable({
+  workspaces,
+  sortConfig,
+  onSort,
   validationStatus = {},
   selectedWorkspaces = new Set(),
   onSelectWorkspace,
-  onSelectAll
+  onSelectAll,
+  sessionMap = new Map(),
+  hookConfigured = false
 }) {
   const [columnWidths, setColumnWidths] = useState({});
   const [isResizing, setIsResizing] = useState(false);
@@ -31,6 +35,7 @@ function WorkspaceTable({
     name: true,
     lastAccessed: true,
     type: true,
+    claude: hookConfigured,
     connection: true,
     workspacePath: true,
     path: false // Hidden by default as it's verbose
@@ -326,6 +331,16 @@ function WorkspaceTable({
                 <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'type')} />
               </th>
             )}
+            {visibleColumns.claude && (
+              <th
+                onClick={() => handleHeaderClick('claude')}
+                className="sortable"
+                style={{ width: columnWidths.claude || 'auto' }}
+              >
+                Claude{getSortIndicator('claude')}
+                <div className="resize-handle" onMouseDown={(e) => handleResizeStart(e, 'claude')} />
+              </th>
+            )}
             {visibleColumns.connection && (
               <th
                 onClick={() => handleHeaderClick('connection')}
@@ -407,6 +422,40 @@ function WorkspaceTable({
                       {getTypeLabel(workspace.type)}
                     </span>
                   </td>
+                )}
+                {visibleColumns.claude && (
+                  (() => {
+                    const wsPath = extractWorkspacePath(workspace) || workspace.path;
+                    const sessions = sessionMap.get(wsPath) || [];
+                    if (sessions.length === 0) return <td className="workspace-claude" />;
+                    const workingCount = sessions.filter(s => s.state === 'working').length;
+                    const waitingCount = sessions.filter(s => s.state === 'waiting').length;
+                    const idleCount = sessions.filter(s => s.state === 'idle').length;
+                    return (
+                      <td className="workspace-claude">
+                        <span className="claude-indicator-group">
+                          {workingCount > 0 && (
+                            <span className="claude-indicator claude-indicator-working" title={`${workingCount} working`}>
+                              <span className="claude-dot claude-dot-working" />
+                              <span className="claude-count">{workingCount}</span>
+                            </span>
+                          )}
+                          {waitingCount > 0 && (
+                            <span className="claude-indicator claude-indicator-waiting" title={`${waitingCount} waiting for approval`}>
+                              <span className="claude-dot claude-dot-waiting" />
+                              <span className="claude-count">{waitingCount}</span>
+                            </span>
+                          )}
+                          {idleCount > 0 && (
+                            <span className="claude-indicator claude-indicator-idle" title={`${idleCount} idle`}>
+                              <span className="claude-dot claude-dot-idle" />
+                              <span className="claude-count">{idleCount}</span>
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                    );
+                  })()
                 )}
                 {visibleColumns.connection && (
                   (() => {

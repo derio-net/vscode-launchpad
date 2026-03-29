@@ -157,6 +157,26 @@ export async function deleteWorkspaces(ids) {
 }
 
 /**
+ * Get active Claude Code sessions
+ * @returns {Promise<Array>} - List of Claude sessions
+ */
+export async function getClaudeSessions() {
+  return apiRequest('/api/claude-sessions');
+}
+
+/**
+ * Kill zombie Claude sessions
+ * @param {Array<number>} pids - PIDs to kill
+ * @returns {Promise<{killed: Array, failed: Array}>}
+ */
+export async function killClaudeSessions(pids) {
+  return apiRequest('/api/claude-sessions/kill', {
+    method: 'POST',
+    body: { pids }
+  });
+}
+
+/**
  * Check if the API is available (health check)
  * @returns {Promise<boolean>} - True if API is available
  */
@@ -240,6 +260,7 @@ export default {
   deleteWorkspaces,
   checkHealth,
   waitForApi,
+  getClaudeSessions,
   getEnvironment,
   getDiagnostics
 };

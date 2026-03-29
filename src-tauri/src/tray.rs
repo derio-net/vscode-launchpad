@@ -20,6 +20,16 @@ pub struct TrayWorkspace {
     pub last_accessed: String,
 }
 
+/// Claude session info fetched from the sidecar API
+#[derive(Debug, Clone, Deserialize)]
+pub struct ClaudeSession {
+    pub pid: u64,
+    #[serde(rename = "sessionId")]
+    pub session_id: String,
+    pub cwd: String,
+    pub state: String, // "working", "waiting", "idle", or "zombie"
+}
+
 /// Convert a workspace path to a vscode:// URI that VS Code's protocol handler recognizes.
 /// Mirrors the convertToVSCodeURI logic in WorkspaceTable.js.
 pub fn convert_to_vscode_uri(path: &str, workspace_type: &str) -> String {
@@ -91,7 +101,7 @@ fn resolve_icon_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
 
 /// Create the initial tray icon with custom app icon and default menu
 pub fn create_tray(app: &tauri::AppHandle) -> tauri::Result<TrayIcon> {
-    let tray_menu = build_menu(app, &[], false, &HashMap::new());
+    let tray_menu = build_menu(app, &[], false, &HashMap::new(), &HashMap::new(), 0, 0, 0);
 
     let mut builder = TrayIconBuilder::with_id("main-tray")
         .menu(&tray_menu)
@@ -184,8 +194,17 @@ fn is_remote_type(workspace_type: &str) -> bool {
     matches!(workspace_type, "remote" | "dev-container" | "attached-container" | "ssh-remote")
 }
 
-/// Build the tray menu with workspace entries and health status
-fn build_menu(app: &tauri::AppHandle, workspaces: &[TrayWorkspace], backend_healthy: bool, validity: &HashMap<String, bool>) -> Menu<tauri::Wry> {
+/// Build the tray menu with workspace entries, Claude session data, and health status
+fn build_menu(
+    app: &tauri::AppHandle,
+    workspaces: &[TrayWorkspace],
+    backend_healthy: bool,
+    validity: &HashMap<String, bool>,
+    session_counts: &HashMap<String, (usize, usize)>,
+    total_active: usize,
+    total_idle: usize,
+    zombie_count: usize,
+) -> Menu<tauri::Wry> {
     let status_label = if backend_healthy { "Backend: Running" } else { "Backend: Offline" };
 
     if workspaces.is_empty() {
@@ -207,10 +226,21 @@ fn build_menu(app: &tauri::AppHandle, workspaces: &[TrayWorkspace], backend_heal
             let emoji = type_emoji(&ws.workspace_type);
             let is_valid = is_remote_type(&ws.workspace_type)
                 || validity.get(&ws.path).copied().unwrap_or(true);
+
+            // Append Claude session indicator if sessions exist
+            let claude_suffix = match session_counts.get(&ws.path) {
+                Some((working, waiting)) if *working > 0 && *waiting > 0 => {
+                    format!(" ⚡{} ⏳{}", working, waiting)
+                }
+                Some((working, 0)) if *working > 0 => format!(" ⚡{}", working),
+                Some((0, waiting)) if *waiting > 0 => format!(" ⏳{}", waiting),
+                _ => String::new(),
+            };
+
             let label = if is_valid {
-                format!("{} {}", emoji, ws.name)
+                format!("{} {}{}", emoji, ws.name, claude_suffix)
             } else {
-                format!("{} ✗ {}", emoji, ws.name)
+                format!("{} ✗ {}{}", emoji, ws.name, claude_suffix)
             };
             let uri = convert_to_vscode_uri(&ws.path, &ws.workspace_type);
             let menu_id = format!("ws_open:{}", uri);
@@ -226,6 +256,23 @@ fn build_menu(app: &tauri::AppHandle, workspaces: &[TrayWorkspace], backend_heal
         let status = MenuItem::with_id(app, "backend_status", status_label, false, None::<&str>).unwrap();
 
         let mut menu_items: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> = Vec::new();
+
+        // Claude session summary line (only if sessions exist)
+        let claude_summary_item;
+        let claude_sep;
+        let total_sessions = total_active + total_idle;
+        if total_sessions > 0 || zombie_count > 0 {
+            let mut parts = Vec::new();
+            if total_active > 0 { parts.push(format!("{} working", total_active)); }
+            if total_idle > 0 { parts.push(format!("{} waiting", total_idle)); }
+            if zombie_count > 0 { parts.push(format!("{} zombie", zombie_count)); }
+            let summary_label = format!("Claude: {}", parts.join(", "));
+            claude_summary_item = MenuItem::with_id(app, "claude_summary", &summary_label, false, None::<&str>).unwrap();
+            claude_sep = PredefinedMenuItem::separator(app).unwrap();
+            menu_items.push(&claude_summary_item);
+            menu_items.push(&claude_sep);
+        }
+
         for item in &ws_items {
             menu_items.push(item);
         }
@@ -241,13 +288,22 @@ fn build_menu(app: &tauri::AppHandle, workspaces: &[TrayWorkspace], backend_heal
     }
 }
 
-/// Update the tray menu with fresh workspace data and health status
-pub async fn update_tray_menu(app: &tauri::AppHandle, workspaces: &[TrayWorkspace], backend_healthy: bool, validity: &HashMap<String, bool>) {
+/// Update the tray menu with fresh workspace data, Claude sessions, and health status
+pub async fn update_tray_menu(
+    app: &tauri::AppHandle,
+    workspaces: &[TrayWorkspace],
+    backend_healthy: bool,
+    validity: &HashMap<String, bool>,
+    session_counts: &HashMap<String, (usize, usize)>,
+    total_active: usize,
+    total_idle: usize,
+    zombie_count: usize,
+) {
     let tray_state: tauri::State<'_, TrayState> = app.state();
     let tray_icon = tray_state.tray_icon.lock().await;
 
     if let Some(tray) = tray_icon.as_ref() {
-        let new_menu = build_menu(app, workspaces, backend_healthy, validity);
+        let new_menu = build_menu(app, workspaces, backend_healthy, validity, session_counts, total_active, total_idle, zombie_count);
         if let Err(e) = tray.set_menu(Some(new_menu)) {
             log::error!("Failed to update tray menu: {}", e);
         } else {
@@ -284,6 +340,65 @@ pub async fn fetch_workspaces(port: u16) -> Vec<TrayWorkspace> {
             Vec::new()
         }
     }
+}
+
+/// Response from /api/claude-sessions
+#[derive(Debug, Deserialize)]
+pub struct ClaudeSessionsResponse {
+    #[serde(rename = "hookConfigured", default)]
+    pub hook_configured: bool,
+    #[serde(default)]
+    pub sessions: Vec<ClaudeSession>,
+}
+
+/// Fetch Claude sessions from the sidecar API
+pub async fn fetch_claude_sessions(port: u16) -> ClaudeSessionsResponse {
+    let url = format!("http://127.0.0.1:{}/api/claude-sessions", port);
+    match reqwest::get(&url).await {
+        Ok(response) => {
+            if response.status().is_success() {
+                match response.json::<ClaudeSessionsResponse>().await {
+                    Ok(data) => data,
+                    Err(e) => {
+                        log::warn!("Failed to parse claude-sessions response: {}", e);
+                        ClaudeSessionsResponse { hook_configured: false, sessions: Vec::new() }
+                    }
+                }
+            } else {
+                ClaudeSessionsResponse { hook_configured: false, sessions: Vec::new() }
+            }
+        }
+        Err(e) => {
+            log::debug!("Failed to fetch claude-sessions for tray: {}", e);
+            ClaudeSessionsResponse { hook_configured: false, sessions: Vec::new() }
+        }
+    }
+}
+
+/// Count Claude sessions per workspace path (CWD matching)
+fn count_sessions_per_workspace(workspaces: &[TrayWorkspace], sessions: &[ClaudeSession]) -> HashMap<String, (usize, usize)> {
+    // Returns: path -> (working_count, waiting_count)
+    let mut counts: HashMap<String, (usize, usize)> = HashMap::new();
+
+    for session in sessions {
+        let cwd = session.cwd.trim_end_matches('/');
+        for ws in workspaces {
+            let ws_path = ws.path.trim_start_matches("file://").trim_end_matches('/');
+            // Decode percent-encoding for comparison
+            let decoded_ws_path = urlencoding::decode(ws_path).unwrap_or(std::borrow::Cow::Borrowed(ws_path));
+            if cwd == decoded_ws_path.as_ref() || cwd.starts_with(&format!("{}/", decoded_ws_path.as_ref())) {
+                let entry = counts.entry(ws.path.clone()).or_insert((0, 0));
+                if session.state == "working" {
+                    entry.0 += 1;
+                } else if session.state == "waiting" {
+                    entry.1 += 1;
+                }
+                break;
+            }
+        }
+    }
+
+    counts
 }
 
 /// Validate workspace paths via the sidecar API.
@@ -341,8 +456,20 @@ pub async fn refresh_tray(app: &tauri::AppHandle, port: u16) {
     let workspaces = fetch_workspaces(port).await;
     let healthy = super::check_sidecar_health(port).await;
     let validity = validate_workspace_paths(port, &workspaces).await;
-    log::debug!("Tray refresh: got {} workspaces, healthy={}, validated {} paths", workspaces.len(), healthy, validity.len());
-    update_tray_menu(app, &workspaces, healthy, &validity).await;
+
+    // Fetch Claude sessions and compute per-workspace counts
+    let claude_data = fetch_claude_sessions(port).await;
+    let live_sessions: Vec<_> = claude_data.sessions.iter().filter(|s| s.state != "zombie").cloned().collect();
+    let session_counts = count_sessions_per_workspace(&workspaces, &live_sessions);
+    let total_active = live_sessions.iter().filter(|s| s.state == "working").count();
+    let total_idle = live_sessions.iter().filter(|s| s.state != "working").count();
+    let zombie_count = claude_data.sessions.iter().filter(|s| s.state == "zombie").count();
+
+    log::debug!(
+        "Tray refresh: {} workspaces, healthy={}, {} paths validated, {} claude sessions",
+        workspaces.len(), healthy, validity.len(), live_sessions.len()
+    );
+    update_tray_menu(app, &workspaces, healthy, &validity, &session_counts, total_active, total_idle, zombie_count).await;
 }
 
 #[cfg(test)]

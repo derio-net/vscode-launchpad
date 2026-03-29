@@ -15,7 +15,14 @@ jest.mock('../workspaceScanner', () => ({
   removeWorkspacesFromPath: jest.fn().mockResolvedValue({ success: true, removed: 0 }),
 }));
 
+jest.mock('../claudeSessionScanner', () => ({
+  initialize: jest.fn().mockResolvedValue(undefined),
+  getSessions: jest.fn().mockReturnValue({ hookConfigured: false, sessions: [] }),
+  killSessions: jest.fn().mockResolvedValue({ killed: [], failed: [] }),
+}));
+
 const workspaceScanner = require('../workspaceScanner');
+const claudeSessionScanner = require('../claudeSessionScanner');
 
 // Create a test app (same setup as server/index.js but without listen())
 function createTestApp() {
@@ -98,6 +105,30 @@ function createTestApp() {
       res.json({ results });
     } catch (error) {
       res.status(500).json({ error: 'Failed to validate paths' });
+    }
+  });
+
+  // Claude sessions
+  app.get('/api/claude-sessions', (req, res) => {
+    try {
+      const data = claudeSessionScanner.getSessions();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch Claude sessions' });
+    }
+  });
+
+  // Kill zombie Claude sessions
+  app.post('/api/claude-sessions/kill', async (req, res) => {
+    try {
+      const { pids } = req.body;
+      if (!Array.isArray(pids) || pids.length === 0) {
+        return res.status(400).json({ error: 'PIDs array is required' });
+      }
+      const result = await claudeSessionScanner.killSessions(pids);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to kill sessions' });
     }
   });
 
@@ -334,6 +365,63 @@ describe('Spec: POST /api/workspaces/delete', () => {
     const response = await request(app)
       .post('/api/workspaces/delete')
       .send({ ids: 'not-an-array' });
+
+    expect(response.status).toBe(400);
+  });
+});
+
+describe('Spec: GET /api/claude-sessions', () => {
+  it('returns hookConfigured and sessions', async () => {
+    claudeSessionScanner.getSessions.mockReturnValue({ hookConfigured: false, sessions: [] });
+
+    const response = await request(app).get('/api/claude-sessions');
+
+    expect(response.status).toBe(200);
+    expect(response.body.hookConfigured).toBe(false);
+    expect(response.body.sessions).toEqual([]);
+  });
+
+  it('returns sessions when hooks configured', async () => {
+    claudeSessionScanner.getSessions.mockReturnValue({
+      hookConfigured: true,
+      sessions: [{
+        pid: 12345, sessionId: 'test-id', cwd: '/project',
+        startedAt: 1700000000000, entrypoint: 'cli', state: 'working',
+      }],
+    });
+
+    const response = await request(app).get('/api/claude-sessions');
+
+    expect(response.status).toBe(200);
+    expect(response.body.hookConfigured).toBe(true);
+    expect(response.body.sessions).toHaveLength(1);
+    expect(response.body.sessions[0].state).toBe('working');
+  });
+
+  it('returns 500 when scanner throws', async () => {
+    claudeSessionScanner.getSessions.mockImplementation(() => { throw new Error('fail'); });
+
+    const response = await request(app).get('/api/claude-sessions');
+    expect(response.status).toBe(500);
+  });
+});
+
+describe('Spec: POST /api/claude-sessions/kill', () => {
+  it('kills valid PIDs', async () => {
+    claudeSessionScanner.killSessions.mockResolvedValue({ killed: [123], failed: [] });
+
+    const response = await request(app)
+      .post('/api/claude-sessions/kill')
+      .send({ pids: [123] });
+
+    expect(response.status).toBe(200);
+    expect(response.body.killed).toEqual([123]);
+  });
+
+  it('returns 400 for missing pids', async () => {
+    const response = await request(app)
+      .post('/api/claude-sessions/kill')
+      .send({});
 
     expect(response.status).toBe(400);
   });

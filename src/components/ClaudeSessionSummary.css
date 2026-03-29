@@ -1,0 +1,194 @@
+.claude-summary {
+  margin-bottom: 8px;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* ── Live sessions bar ── */
+.claude-summary-live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-secondary, #1e1e2e);
+  font-size: 13px;
+  color: var(--text-secondary, #a0a0b0);
+}
+
+.claude-summary-icon { font-size: 14px; }
+
+.claude-summary-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.claude-summary-label {
+  font-weight: 600;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.claude-summary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: -2px 0;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.claude-summary-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.claude-summary-btn-active.claude-summary-working {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.4);
+  color: #4caf50;
+}
+
+.claude-summary-btn-active.claude-summary-waiting {
+  background: rgba(255, 191, 0, 0.15);
+  border-color: rgba(255, 191, 0, 0.4);
+  color: #ffbf00;
+}
+
+.claude-summary-idle-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #888;
+}
+
+/* ── Zombie section ── */
+.claude-summary-zombies {
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.05);
+  border-top: 1px solid var(--border-color, #333);
+}
+
+.claude-zombie-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.claude-zombie-icon { font-size: 13px; }
+
+.claude-zombie-count {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.claude-zombie-kill-all {
+  margin-left: auto;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #ef4444;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.claude-zombie-kill-all:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.claude-zombie-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.claude-zombie-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #a0a0b0);
+  border-radius: 3px;
+}
+
+.claude-zombie-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.claude-zombie-killing {
+  opacity: 0.4;
+}
+
+.claude-zombie-name {
+  color: var(--text-primary, #e0e0e0);
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.claude-zombie-age {
+  color: #888;
+  min-width: 30px;
+}
+
+.claude-zombie-pid {
+  color: #666;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.claude-zombie-kill {
+  margin-left: auto;
+  background: none;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 11px;
+  color: #ef4444;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.2;
+}
+
+.claude-zombie-kill:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.claude-zombie-kill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Shared dots ── */
+.claude-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.claude-dot-working {
+  background-color: #4caf50;
+  box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+}
+
+.claude-dot-waiting {
+  background-color: #ffbf00;
+  box-shadow: 0 0 4px rgba(255, 191, 0, 0.5);
+}
+
+.claude-dot-idle {
+  background-color: #666;
+}

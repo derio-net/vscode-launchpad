@@ -17,6 +17,7 @@ View, search, and open all your VS Code workspaces from one place. A cross-platf
 - 🐳 **Docker Support** — Deploy easily with Docker and docker-compose
 - 💻 **Desktop App** — Native app using Tauri (macOS, Windows, Linux)
 - 🔒 **Secure** — Runs only on localhost by default
+- 🤖 **Claude Session Monitor** — See which workspaces have active Claude Code sessions, their state (working/waiting/idle), and kill orphaned zombie sessions
 
 **Supported workspace types:** Local, Remote, SSH Remote, Dev Container, Attached Container.
 
@@ -103,6 +104,66 @@ Additional endpoints: `GET /health`, `POST /api/validate-path`, `POST /api/valid
 | `HOST` | `127.0.0.1` | Bind address (`0.0.0.0` in Docker) |
 | `WORKSPACES_MOUNT_POINT` | *(auto-detected)* | Override VS Code workspace storage path |
 | `LOG_LEVEL` | `info` | Logging level (debug/info/warn/error) |
+
+## Claude Code Integration
+
+LaunchPad can show live Claude Code session status per workspace — which sessions are working, waiting for approval, idle, or orphaned (zombie). This requires configuring Claude Code hooks.
+
+**Without hooks configured, the Claude integration does not appear in the UI.**
+
+### Setup
+
+**Automatic (recommended):**
+
+```bash
+./scripts/install-claude-hooks.sh          # Install hooks
+./scripts/install-claude-hooks.sh --check  # Verify installation
+./scripts/install-claude-hooks.sh --remove # Uninstall hooks
+```
+
+The script backs up your settings before modifying them, is idempotent, and only adds/removes LaunchPad hooks.
+
+**Manual:** Add the following to your `~/.claude/settings.json` (adjust the path to where you installed LaunchPad):
+
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "permission_prompt|idle_prompt",
+        "hooks": [{ "type": "command", "command": "/path/to/vscode-launchpad/scripts/claude-session-hook.sh" }]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "/path/to/vscode-launchpad/scripts/claude-session-hook.sh working" }]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "/path/to/vscode-launchpad/scripts/claude-session-hook.sh idle" }]
+      }
+    ]
+  }
+}
+```
+
+### Session States
+
+| State | Indicator | Meaning |
+|-------|-----------|---------|
+| **Working** | Green (pulsing) | Claude is actively streaming/computing |
+| **Waiting** | Amber (pulsing) | Claude needs tool approval from you |
+| **Idle** | Grey | Claude is at the prompt, nothing pending |
+| **Zombie** | Red (in summary) | Terminal disconnected, session orphaned — can be killed from the UI |
+
+### Troubleshooting
+
+- **"Claude integration not showing"** — Check that `~/.claude/settings.json` contains the hooks above and that the script path is correct. New Claude sessions must be started after adding hooks.
+- **"Sessions show wrong state"** — State updates happen on Claude Code events. If you just configured hooks, restart your Claude sessions.
+- **"Zombie sessions won't die"** — Use the Kill button in the summary panel, or manually: `kill <PID>`.
 
 ## Documentation
 

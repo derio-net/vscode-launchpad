@@ -1,7 +1,10 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import WorkspaceTable from './WorkspaceTable';
 import SearchFilter from './SearchFilter';
+import ClaudeSessionSummary from './ClaudeSessionSummary';
 import { validatePaths, deleteWorkspaces } from '../api/client';
+import { useClaudeSessions, getAggregateState } from '../hooks/useClaudeSessions';
+import { useClaudeNotifications } from '../hooks/useClaudeNotifications';
 import { ask } from '@tauri-apps/plugin-dialog';
 import { extractConnectionInfo, extractWorkspacePath } from '../utils/workspaceUtils';
 import './Dashboard.css';
@@ -21,11 +24,16 @@ const emitWorkspacesChanged = async () => {
 function Dashboard({ workspaces, onRefresh }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [claudeFilter, setClaudeFilter] = useState(null); // null = no filter, 'waiting' = only waiting sessions
   const [sortConfig, setSortConfig] = useState({ key: 'lastAccessed', direction: 'desc' });
   const [validationStatus, setValidationStatus] = useState({}); // Map of workspace id to isValid
   const [selectedWorkspaces, setSelectedWorkspaces] = useState(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState(null);
+
+  // Claude session monitoring (gated on hook configuration)
+  const { sessionMap, summary: claudeSummary, transitions, zombies, hookConfigured } = useClaudeSessions(workspaces);
+  useClaudeNotifications(transitions, sessionMap, workspaces);
 
   // Filter and sort workspaces
   const filteredAndSortedWorkspaces = useMemo(() => {
@@ -45,6 +53,15 @@ function Dashboard({ workspaces, onRefresh }) {
       filtered = filtered.filter(ws => ws.type === typeFilter);
     }
 
+    // Apply Claude session filter (working or waiting)
+    if (claudeFilter && (claudeFilter === 'working' || claudeFilter === 'waiting')) {
+      filtered = filtered.filter(ws => {
+        const wsPath = extractWorkspacePath(ws) || ws.path;
+        const sessions = sessionMap.get(wsPath);
+        return sessions && sessions.some(s => s.state === claudeFilter);
+      });
+    }
+
     // Apply sorting
     const sorted = [...filtered].sort((a, b) => {
       let aValue, bValue;
@@ -56,6 +73,20 @@ function Dashboard({ workspaces, onRefresh }) {
       } else if (sortConfig.key === 'workspacePath') {
         aValue = extractWorkspacePath(a);
         bValue = extractWorkspacePath(b);
+      } else if (sortConfig.key === 'claude') {
+        // Sort by session count, with idle-state workspaces first
+        const aPath = extractWorkspacePath(a) || a.path;
+        const bPath = extractWorkspacePath(b) || b.path;
+        const aSessions = sessionMap.get(aPath) || [];
+        const bSessions = sessionMap.get(bPath) || [];
+        const aState = getAggregateState(aSessions);
+        const bState = getAggregateState(bSessions);
+        // idle (needs attention) > active > none
+        const stateRank = (s) => s === 'waiting' ? 3 : s === 'working' ? 2 : s === 'idle' ? 1 : 0;
+        const rankDiff = stateRank(bState) - stateRank(aState);
+        if (rankDiff !== 0) return sortConfig.direction === 'asc' ? -rankDiff : rankDiff;
+        aValue = aSessions.length;
+        bValue = bSessions.length;
       } else {
         aValue = a[sortConfig.key];
         bValue = b[sortConfig.key];
@@ -81,7 +112,7 @@ function Dashboard({ workspaces, onRefresh }) {
     });
 
     return sorted;
-  }, [workspaces, searchTerm, typeFilter, sortConfig]);
+  }, [workspaces, searchTerm, typeFilter, claudeFilter, sortConfig, sessionMap]);
 
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
@@ -93,6 +124,7 @@ function Dashboard({ workspaces, onRefresh }) {
   const handleClearFilters = () => {
     setSearchTerm('');
     setTypeFilter('all');
+    setClaudeFilter(null);
   };
 
   // Validate workspace paths when workspaces change
@@ -275,6 +307,15 @@ function Dashboard({ workspaces, onRefresh }) {
         </div>
       )}
 
+      {hookConfigured && (
+        <ClaudeSessionSummary
+          summary={claudeSummary}
+          zombies={zombies}
+          claudeFilter={claudeFilter}
+          onFilterChange={setClaudeFilter}
+        />
+      )}
+
       <div className="dashboard-toolbar">
         <SearchFilter
           searchTerm={searchTerm}
@@ -302,6 +343,8 @@ function Dashboard({ workspaces, onRefresh }) {
         selectedWorkspaces={selectedWorkspaces}
         onSelectWorkspace={handleSelectWorkspace}
         onSelectAll={handleSelectAll}
+        sessionMap={sessionMap}
+        hookConfigured={hookConfigured}
       />
     </div>
   );

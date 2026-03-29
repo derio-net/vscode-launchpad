@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const workspaceScanner = require('./workspaceScanner');
+const claudeSessionScanner = require('./claudeSessionScanner');
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3010;
@@ -115,6 +116,32 @@ app.post('/api/validate-paths', async (req, res) => {
   }
 });
 
+// Claude Code sessions
+app.get('/api/claude-sessions', (req, res) => {
+  try {
+    const data = claudeSessionScanner.getSessions();
+    res.json(data);
+  } catch (error) {
+    log.error('Error fetching Claude sessions:', error);
+    res.status(500).json({ error: 'Failed to fetch Claude sessions' });
+  }
+});
+
+// Kill zombie Claude sessions
+app.post('/api/claude-sessions/kill', async (req, res) => {
+  try {
+    const { pids } = req.body;
+    if (!Array.isArray(pids) || pids.length === 0) {
+      return res.status(400).json({ error: 'PIDs array is required' });
+    }
+    const result = await claudeSessionScanner.killSessions(pids);
+    res.json(result);
+  } catch (error) {
+    log.error('Error killing Claude sessions:', error);
+    res.status(500).json({ error: 'Failed to kill sessions' });
+  }
+});
+
 // Delete workspaces
 app.post('/api/workspaces/delete', async (req, res) => {
   console.log('[Server] Delete endpoint called');
@@ -159,8 +186,11 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Initialize workspace scanner and start server
-workspaceScanner.initialize().then(() => {
+// Initialize scanners and start server
+Promise.all([
+  workspaceScanner.initialize(),
+  claudeSessionScanner.initialize(),
+]).then(() => {
   app.listen(PORT, HOST, () => {
     // Always log startup info regardless of LOG_LEVEL
     console.log('========================================');
@@ -171,6 +201,8 @@ workspaceScanner.initialize().then(() => {
     console.log(`   - GET  /api/workspaces`);
     console.log(`   - POST /api/validate-path`);
     console.log(`   - POST /api/validate-paths`);
+    console.log(`   - GET  /api/claude-sessions`);
+    console.log(`   - POST /api/claude-sessions/kill`);
     console.log(`   - POST /api/workspaces/delete`);
     console.log('========================================');
     console.log('🔒 Server is only accessible from localhost for security');
@@ -180,6 +212,6 @@ workspaceScanner.initialize().then(() => {
     log.info('Server is only accessible from localhost for security');
   });
 }).catch(error => {
-  log.error('Failed to initialize workspace scanner:', error);
+  log.error('Failed to initialize scanners:', error);
   process.exit(1);
 });
