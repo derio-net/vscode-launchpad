@@ -101,7 +101,7 @@ fn resolve_icon_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
 
 /// Create the initial tray icon with custom app icon and default menu
 pub fn create_tray(app: &tauri::AppHandle) -> tauri::Result<TrayIcon> {
-    let tray_menu = build_menu(app, &[], false, &HashMap::new(), &HashMap::new(), 0, 0, 0);
+    let tray_menu = build_menu(app, &[], false, &HashMap::new(), &HashMap::new(), 0, 0, 0, 0);
 
     let mut builder = TrayIconBuilder::with_id("main-tray")
         .menu(&tray_menu)
@@ -201,7 +201,8 @@ fn build_menu(
     backend_healthy: bool,
     validity: &HashMap<String, bool>,
     session_counts: &HashMap<String, (usize, usize)>,
-    total_active: usize,
+    total_working: usize,
+    total_waiting: usize,
     total_idle: usize,
     zombie_count: usize,
 ) -> Menu<tauri::Wry> {
@@ -260,11 +261,12 @@ fn build_menu(
         // Claude session summary line (only if sessions exist)
         let claude_summary_item;
         let claude_sep;
-        let total_sessions = total_active + total_idle;
+        let total_sessions = total_working + total_waiting + total_idle;
         if total_sessions > 0 || zombie_count > 0 {
             let mut parts = Vec::new();
-            if total_active > 0 { parts.push(format!("{} working", total_active)); }
-            if total_idle > 0 { parts.push(format!("{} waiting", total_idle)); }
+            if total_working > 0 { parts.push(format!("{} working", total_working)); }
+            if total_waiting > 0 { parts.push(format!("{} waiting", total_waiting)); }
+            if total_idle > 0 { parts.push(format!("{} idle", total_idle)); }
             if zombie_count > 0 { parts.push(format!("{} zombie", zombie_count)); }
             let summary_label = format!("Claude: {}", parts.join(", "));
             claude_summary_item = MenuItem::with_id(app, "claude_summary", &summary_label, false, None::<&str>).unwrap();
@@ -295,7 +297,8 @@ pub async fn update_tray_menu(
     backend_healthy: bool,
     validity: &HashMap<String, bool>,
     session_counts: &HashMap<String, (usize, usize)>,
-    total_active: usize,
+    total_working: usize,
+    total_waiting: usize,
     total_idle: usize,
     zombie_count: usize,
 ) {
@@ -303,7 +306,7 @@ pub async fn update_tray_menu(
     let tray_icon = tray_state.tray_icon.lock().await;
 
     if let Some(tray) = tray_icon.as_ref() {
-        let new_menu = build_menu(app, workspaces, backend_healthy, validity, session_counts, total_active, total_idle, zombie_count);
+        let new_menu = build_menu(app, workspaces, backend_healthy, validity, session_counts, total_working, total_waiting, total_idle, zombie_count);
         if let Err(e) = tray.set_menu(Some(new_menu)) {
             log::error!("Failed to update tray menu: {}", e);
         } else {
@@ -461,15 +464,16 @@ pub async fn refresh_tray(app: &tauri::AppHandle, port: u16) {
     let claude_data = fetch_claude_sessions(port).await;
     let live_sessions: Vec<_> = claude_data.sessions.iter().filter(|s| s.state != "zombie").cloned().collect();
     let session_counts = count_sessions_per_workspace(&workspaces, &live_sessions);
-    let total_active = live_sessions.iter().filter(|s| s.state == "working").count();
-    let total_idle = live_sessions.iter().filter(|s| s.state != "working").count();
+    let total_working = live_sessions.iter().filter(|s| s.state == "working").count();
+    let total_waiting = live_sessions.iter().filter(|s| s.state == "waiting").count();
+    let total_idle = live_sessions.iter().filter(|s| s.state == "idle").count();
     let zombie_count = claude_data.sessions.iter().filter(|s| s.state == "zombie").count();
 
     log::debug!(
         "Tray refresh: {} workspaces, healthy={}, {} paths validated, {} claude sessions",
         workspaces.len(), healthy, validity.len(), live_sessions.len()
     );
-    update_tray_menu(app, &workspaces, healthy, &validity, &session_counts, total_active, total_idle, zombie_count).await;
+    update_tray_menu(app, &workspaces, healthy, &validity, &session_counts, total_working, total_waiting, total_idle, zombie_count).await;
 }
 
 #[cfg(test)]

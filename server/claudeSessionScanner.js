@@ -44,8 +44,8 @@ const checkHookConfigured = async () => {
       });
     };
 
-    // Require at least the Notification hook
-    return hasHook('Notification');
+    // Require all three hooks for accurate state coverage
+    return hasHook('Notification') && hasHook('UserPromptSubmit') && hasHook('Stop');
   } catch {
     return false;
   }

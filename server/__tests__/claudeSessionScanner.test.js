@@ -27,16 +27,33 @@ describe('claudeSessionScanner', () => {
   });
 
   describe('checkHookConfigured', () => {
-    it('returns true when hook script is in Notification hooks', async () => {
+    const allThreeHooks = {
+      Notification: [{
+        matcher: 'permission_prompt|idle_prompt',
+        hooks: [{ type: 'command', command: '/path/to/claude-session-hook.sh' }]
+      }],
+      UserPromptSubmit: [{
+        matcher: '',
+        hooks: [{ type: 'command', command: '/path/to/claude-session-hook.sh working' }]
+      }],
+      Stop: [{
+        matcher: '',
+        hooks: [{ type: 'command', command: '/path/to/claude-session-hook.sh idle' }]
+      }],
+    };
+
+    it('returns true when all three hooks are configured', async () => {
+      fs.readFile.mockResolvedValue(JSON.stringify({ hooks: allThreeHooks }));
+      expect(await scanner.checkHookConfigured()).toBe(true);
+    });
+
+    it('returns false when only Notification hook configured', async () => {
       fs.readFile.mockResolvedValue(JSON.stringify({
         hooks: {
-          Notification: [{
-            matcher: 'permission_prompt|idle_prompt',
-            hooks: [{ type: 'command', command: '/path/to/claude-session-hook.sh' }]
-          }]
+          Notification: allThreeHooks.Notification,
         }
       }));
-      expect(await scanner.checkHookConfigured()).toBe(true);
+      expect(await scanner.checkHookConfigured()).toBe(false);
     });
 
     it('returns false when no hooks configured', async () => {
@@ -54,7 +71,13 @@ describe('claudeSessionScanner', () => {
         hooks: {
           Notification: [{
             hooks: [{ type: 'command', command: 'some-other-script.sh' }]
-          }]
+          }],
+          UserPromptSubmit: [{
+            hooks: [{ type: 'command', command: 'some-other-script.sh' }]
+          }],
+          Stop: [{
+            hooks: [{ type: 'command', command: 'some-other-script.sh' }]
+          }],
         }
       }));
       expect(await scanner.checkHookConfigured()).toBe(false);

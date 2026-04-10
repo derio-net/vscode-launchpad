@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './WorkspaceTable.css';
 import { open } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
@@ -41,6 +41,14 @@ function WorkspaceTable({
     path: false // Hidden by default as it's verbose
   });
   const [showColumnMenu, setShowColumnMenu] = useState(false);
+
+  // Sync Claude column visibility when hookConfigured changes to true (auto-show only)
+  useEffect(() => {
+    if (hookConfigured) {
+      setVisibleColumns(prev => ({ ...prev, claude: true }));
+    }
+  }, [hookConfigured]);
+
   const resizingColumn = useRef(null);
   const startX = useRef(0);
   const startWidth = useRef(0);

@@ -95,15 +95,19 @@ describe('getAggregateState', () => {
     expect(getAggregateState(null)).toBeNull();
   });
 
-  it('returns active when all sessions are active', () => {
+  it('returns working when all sessions are working', () => {
     expect(getAggregateState([{ state: 'working' }, { state: 'working' }])).toBe('working');
   });
 
-  it('returns idle when any session is idle', () => {
+  it('returns waiting when any session is waiting (highest urgency)', () => {
     expect(getAggregateState([{ state: 'working' }, { state: 'waiting' }])).toBe('waiting');
   });
 
-  it('returns idle when all sessions are idle', () => {
+  it('returns waiting when all sessions are waiting', () => {
     expect(getAggregateState([{ state: 'waiting' }])).toBe('waiting');
+  });
+
+  it('returns idle when all sessions are idle', () => {
+    expect(getAggregateState([{ state: 'idle' }, { state: 'idle' }])).toBe('idle');
   });
 });

@@ -8,7 +8,7 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:react\"",
     "dev:server": "node server/index.js",
     "dev:react": "PORT=${DASHBOARD_DEV_PORT:-3020} BROWSER=none react-scripts start",
-    "build": "react-scripts build && rm -rf public/static public/index.html public/asset-manifest.json && cp -r build/* public/",
+    "build": "cp public/index.template.html public/index.html && react-scripts build && rm -rf public/static public/index.html public/asset-manifest.json && cp -r build/* public/",
     "build:react": "react-scripts build",
     "build:sidecar": "node scripts/build-sidecar.js",
     "tauri": "tauri",
