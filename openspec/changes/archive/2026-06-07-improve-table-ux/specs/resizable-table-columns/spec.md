@@ -1,9 +1,7 @@
-# resizable-table-columns Specification
+# Delta: resizable-table-columns
 
-## Purpose
-Defines how users resize workspace table columns: adjacent-pair zero-sum resizing via header drag handles, minimum-width constraints, persistence of widths across sessions, and reset to defaults.
+## MODIFIED Requirements
 
-## Requirements
 ### Requirement: Users can resize table columns
 The system SHALL allow users to resize table columns by dragging the handle between two column headers, trading width only between that adjacent pair of visible columns, with column widths persisting across sessions.
 
