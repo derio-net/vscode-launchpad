@@ -1,6 +1,6 @@
 schema_version: 2
 plan: 2026-06-07-readme-truth-and-releases
-spec: docs/superpowers/specs/2026-06-07-readme-truth-and-releases-design.md
+spec: 2026-06-07-readme-truth-and-releases-design.md
 target_repo: derio-net/vscode-launchpad
 fr_version: '>=3.0.0,<4.0.0'
 created: '2026-06-07'
