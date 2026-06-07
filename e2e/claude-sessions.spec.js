@@ -2,16 +2,17 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Claude Session Monitor', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.workspace-table', { timeout: 10000 });
-  });
+  // NOTE: API mocks must be installed BEFORE page.goto() — the app polls
+  // /api/claude-sessions immediately on load, and on a machine where hooks
+  // are genuinely configured the real response would win over a late mock.
 
   test('Claude column is hidden when hooks not configured', async ({ page }) => {
     // Mock API returning hookConfigured: false
     await page.route('**/api/claude-sessions', route =>
       route.fulfill({ status: 200, body: JSON.stringify({ hookConfigured: false, sessions: [] }), contentType: 'application/json' })
     );
+    await page.goto('/');
+    await page.waitForSelector('.workspace-table', { timeout: 10000 });
     await page.waitForTimeout(6000);
     await expect(page.locator('th:has-text("Claude")')).not.toBeVisible();
     await expect(page.locator('.claude-summary')).not.toBeVisible();
@@ -32,6 +33,8 @@ test.describe('Claude Session Monitor', () => {
         }),
       })
     );
+    await page.goto('/');
+    await page.waitForSelector('.workspace-table', { timeout: 10000 });
     await page.waitForTimeout(6000);
 
     // Summary should show
@@ -55,6 +58,8 @@ test.describe('Claude Session Monitor', () => {
         }),
       })
     );
+    await page.goto('/');
+    await page.waitForSelector('.workspace-table', { timeout: 10000 });
     await page.waitForTimeout(6000);
 
     const zombieSection = page.locator('.claude-summary-zombies');

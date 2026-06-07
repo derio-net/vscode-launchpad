@@ -70,6 +70,15 @@
   color: var(--text-primary);
 }
 
+/* Header being drag-reordered: lifted above its siblings, following the cursor */
+.workspace-table th.th-dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+  background: var(--bg-elevated);
+  z-index: 3;
+  box-shadow: var(--shadow-lg);
+}
+
 /* ── Rows ── */
 .workspace-table td {
   padding: 11px 16px;
@@ -213,6 +222,35 @@
   max-width: 300px;
 }
 
+/* ── Expandable cells (Path, Full Path, Connection) ── */
+.cell-expandable {
+  cursor: pointer;
+}
+
+.cell-expanded {
+  white-space: normal;
+  word-break: break-all;
+  text-overflow: clip;
+}
+
+.cell-copy-btn {
+  margin-left: 8px;
+  padding: 1px 7px;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  vertical-align: middle;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.cell-copy-btn:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
 /* ── Empty state ── */
 .no-results {
   text-align: center;
@@ -222,60 +260,64 @@
   font-size: 0.9rem;
 }
 
-/* ── Column visibility controls ── */
-.table-controls {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
-}
-
-.column-visibility-dropdown {
-  position: relative;
-}
-
-.column-toggle-btn {
-  padding: 6px 14px;
-  background-color: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
-  letter-spacing: 0.02em;
-}
-
-.column-toggle-btn:hover {
-  background-color: var(--bg-hover);
-  border-color: var(--border-strong);
-  color: var(--text-primary);
-}
-
+/* ── Column context menu (right-click on the header row) ── */
 .column-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 100;
-  min-width: 170px;
+  min-width: 190px;
   padding: 6px 0;
+}
+
+.column-context-menu {
+  position: fixed;
 }
 
 .column-menu-item {
   display: flex;
   align-items: center;
-  padding: 7px 14px;
-  cursor: pointer;
+  padding: 5px 10px 5px 6px;
   transition: background-color var(--transition-fast);
 }
 
-.column-menu-item:hover {
+.column-menu-item:hover,
+.column-menu-item.menu-item-dragging {
   background-color: var(--bg-hover);
+}
+
+/* Menu item being drag-reordered: lifted above its siblings, following the cursor */
+.column-menu-item.menu-item-dragging {
+  position: relative;
+  z-index: 1;
+  opacity: 0.9;
+  box-shadow: var(--shadow-lg);
+  background-color: var(--bg-elevated);
+}
+
+.column-drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  padding: 0 8px 0 6px;
+  font-size: 0.9rem;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.column-drag-handle:hover {
+  color: var(--text-primary);
+}
+
+.menu-item-dragging .column-drag-handle {
+  cursor: grabbing;
+}
+
+.column-menu-label {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  cursor: pointer;
 }
 
 .column-menu-item input[type="checkbox"] {
@@ -286,12 +328,45 @@
   height: 15px;
 }
 
+.column-menu-item input[type="checkbox"]:disabled {
+  cursor: default;
+}
+
 .column-menu-item span {
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
 
 .column-menu-item:hover span {
+  color: var(--text-primary);
+}
+
+.column-lock {
+  margin-left: auto;
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.column-menu-separator {
+  border-top: 1px solid var(--border);
+  margin: 6px 0;
+}
+
+.column-menu-reset {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.column-menu-reset:hover {
+  background-color: var(--bg-hover);
   color: var(--text-primary);
 }
 
