@@ -1,0 +1,21 @@
+schema_version: 2
+plan: 2026-06-07-readme-truth-and-releases-rework-1
+spec: 2026-06-07-readme-truth-and-releases-design.md
+target_repo: derio-net/vscode-launchpad
+fr_version: '>=3.0.0,<4.0.0'
+created: '2026-06-07'
+parent_plan: 2026-06-07-readme-truth-and-releases
+origin_items:
+- id: 1
+  item: 'release.yml update-release job: softprops/action-gh-release@v1 cannot apply
+    body to draft releases (''not include valid file'', body silently unapplied) and
+    corrupted tag_name to untagged-* on publish — replace step with a plain ''gh api
+    PATCH'' using the release id (search /releases for the tag, drafts invisible to
+    /releases/tags/)'
+  source: v0.2.0 release Test Plan run 27093898408
+  track: development
+- id: 2
+  item: 'GitHub Actions Node 20 deprecation: actions/checkout@v4 and softprops/action-gh-release@v1
+    forced to Node 24 on 2026-06-16 — bump or replace before next release'
+  source: CI deprecation warning in run 27093898408
+  track: operations

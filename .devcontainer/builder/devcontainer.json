@@ -13,10 +13,10 @@
   "workspaceFolder": "${localWorkspaceFolder}",
   "runArgs": [
     "--env-file",
-    "${localEnv:HOME}/.config/vk/secrets/vscode-launchpad/builder.env"
+    "${localEnv:HOME}/.config/fr/secrets/vscode-launchpad/builder.env"
   ],
   "customizations": {
-    "vk": {
+    "fr": {
       "profile": "builder",
       "purpose": "local Tauri desktop builds (npm run tauri:build:full); Rust toolchain + Node sidecar bundling"
     }
