@@ -96,7 +96,7 @@ jobs:
         run: |
           echo "::warning::macOS code signing skipped — APPLE_CERTIFICATE secret is not configured."
           echo "To enable signing, add APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, and APPLE_SIGNING_IDENTITY secrets."
-          echo "See docs/macos-code-signing.md for setup instructions."
+          echo "See docs/MACOS-CODE-SIGNING.md for setup instructions."
 
       - name: Build Tauri app
         id: tauri-build

@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "VS Code Launchpad",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "identifier": "com.vscodeworkspacedashboard.desktop",
   "build": {
     "frontendDist": "../public",

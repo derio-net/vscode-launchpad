@@ -1,0 +1,139 @@
+# README Truth, About Section, and Release Pipeline Activation
+
+**Date:** 2026-06-07
+**Status:** approved (operator Q&A, fr-goal run)
+**Branch:** `feat/readme-and-releases`
+
+## Goal
+
+Make the repo's public presentation honest and complete: fill the empty GitHub
+About section, fix every README claim that doesn't match the code, and turn the
+already-working-but-invisible release pipeline into published, downloadable
+release artifacts.
+
+## Findings (verified against code and live repo state)
+
+| # | Finding | Evidence |
+|---|---------|----------|
+| F1 | About section empty (no description, topics, homepage) | `gh repo view` → `"description":""`, `repositoryTopics: null` |
+| F2 | Only release is a **draft** v0.1.10 (2026-03-28) with 9 artifacts across 4 platforms; drafts are invisible to visitors, so the public sees zero releases. Draft predates the Apr 10 session-monitor fixes on main. | `gh release list`, `gh release view v0.1.10` |
+| F3 | README line 6 says "(and future desktop app)" while line 18 lists "💻 Desktop App" as an existing feature | `README.md:6,18` |
+| F4 | README's quarantine note ("Downloaded builds are not notarized…") sits under *build from source* and implies public downloads that don't exist | `README.md:61` |
+| F5 | README has no Download section at all, despite CI building installers for 4 platforms | `README.md`, `release.yml` |
+| F6 | Manifests say `1.0.0` (package.json, tauri.conf.json, Cargo.toml) but the latest tag is `v0.1.10`; CI overwrites tauri.conf from the tag, so 1.0.0 never ships — it only misleads | `package.json:3`, `src-tauri/tauri.conf.json:4`, `src-tauri/Cargo.toml:3` |
+| F7 | `release.yml:99` references `docs/macos-code-signing.md`; the actual file is `docs/MACOS-CODE-SIGNING.md` (breaks on case-sensitive filesystems / is plain wrong) | `release.yml:99` |
+| F8 | `RELEASE_CHECKLIST.md` references a nonexistent `CHANGELOG.md` and `npm run lint` (no lint script exists); artifact list omits the `.rpm` CI actually builds | `RELEASE_CHECKLIST.md` |
+| F9 | Feature claims verified TRUE: 30s auto-refresh (`workspaceScanner.js:142`), path tooltips (`WorkspaceTable.js:415`), localhost-only default (`server/index.js:9`), workspace types, Claude session monitor | code |
+
+## Decisions (operator Q&A, 2026-06-07)
+
+| Decision | Choice |
+|----------|--------|
+| Release strategy | Delete stale v0.1.10 **draft** (keep the tag for release-notes diffing). After this PR merges, operator pushes `v0.2.0`; CI builds fresh artifacts; operator reviews and publishes the draft. Keep `releaseDraft: true` flow. |
+| Version alignment | Manifests → `0.2.0` (stay pre-1.0; unsigned/un-notarized builds are 0.x territory) |
+| About section | Description: `View, search, and open all your VS Code workspaces from one place — web dashboard + Tauri desktop app`. Topics: `vscode, workspaces, tauri, react, developer-tools, dashboard, productivity`. Homepage: empty. |
+| Test Plan | Yes — post-merge, operator-driven (below) |
+
+## Changes
+
+### C1. Docs-reference integrity test (TDD anchor)
+
+New server-side test `server/__tests__/docs-references.test.js` (runs under
+`jest.server.config.js`):
+
+- Extracts relative `.md` links from `README.md`, `BUILD.md`,
+  `RELEASE_CHECKLIST.md`, `CONTRIBUTING.md` and asserts each target exists.
+- Extracts `docs/*.md` path references from `.github/workflows/*.yml` and
+  asserts each exists.
+- **Case-sensitive comparison** (directory-listing match, not `fs.existsSync`)
+  — macOS APFS is case-insensitive, so a naive check would miss F7.
+
+This test is written FIRST and must fail on the current tree (F7, F8), then
+pass after C4/C5.
+
+### C2. README rewrite (truth + improvement)
+
+- Line 6: drop "(and future desktop app)" — the desktop app exists.
+- New **Download** section above "Build from source": links to the GitHub
+  Releases page, per-platform install notes; the macOS quarantine/`xattr`
+  note moves HERE (where it's true) and stays out of the build-from-source
+  path (a locally built app has no quarantine flag).
+- Desktop App section keeps `tauri:build:full` as the from-source
+  alternative.
+- Features list: add the column-customization features that already shipped
+  (resize, show/hide via the "Columns ▼" dropdown — `WorkspaceTable.js:273`;
+  corrected in code review: the spec originally said "right-click menu",
+  which the code does not implement).
+- Add a latest-release badge next to the Tests badge (renders once v0.2.0
+  publishes; acceptable to show "no release" between merge and publish).
+- All other verified claims (F9) stay as-is.
+
+### C3. Version alignment → 0.2.0
+
+- `package.json` + `package-lock.json` (`npm install` refresh)
+- `src-tauri/tauri.conf.json`
+- `src-tauri/Cargo.toml` (+ `Cargo.lock` if tracked)
+
+### C4. release.yml case fix
+
+`docs/macos-code-signing.md` → `docs/MACOS-CODE-SIGNING.md` (F7).
+
+### C5. RELEASE_CHECKLIST.md consistency
+
+- Remove the `CHANGELOG.md` item (release notes are auto-generated by CI
+  from git log; that's the system of record).
+- Remove `npm run lint` item (no lint script exists).
+- Add `.rpm` to the artifact checklist (CI builds it).
+- Update example tag in the checklist from `v1.0.0` to a 0.x example
+  matching the chosen versioning.
+
+### C6. GitHub About section (live repo mutation, host-side gh)
+
+- `gh repo edit` (or `gh api PATCH /repos/{owner}/{repo}`) sets the approved
+  description; `gh api PUT /repos/{owner}/{repo}/topics` sets the 7 topics.
+- Executed from the host (host gh auth), verified with `gh repo view`.
+- Operator approved the exact text in the Q&A.
+
+### C7. Stale draft cleanup (live repo mutation, host-side gh)
+
+- Delete the v0.1.10 **draft release** only: `gh release delete v0.1.10`.
+- The `v0.1.10` git tag is KEPT so v0.2.0's auto-generated notes show
+  "changes since v0.1.10".
+
+## Out of scope
+
+- macOS notarization / Windows code signing (secrets exist as CI plumbing;
+  configuring real certificates is a separate effort — README/checklist may
+  reference it honestly as "unsigned builds").
+- CHANGELOG.md creation (decided against: CI-generated release notes are the
+  record).
+- Auto-updater (mentioned in RELEASE_CHECKLIST as "if applicable"; none
+  exists; not a README claim).
+- The in-flight table-UX design work (S2296) — separate change.
+
+## Implementation Plans
+
+| Plan | Repo | Status | Notes |
+|------|------|--------|-------|
+| 2026-06-07-readme-truth-and-releases | `derio-net/vscode-launchpad` | `2026-06-07-readme-truth-and-releases` | — |
+
+## Test Plan
+
+Post-merge, operator-driven; the agent drives checks, the operator does what
+the agent can't reach.
+
+1. Operator: `git checkout main && git pull`, then
+   `git tag -a v0.2.0 -m "Release 0.2.0" && git push origin v0.2.0`.
+2. Agent: watch `gh run list --workflow=release.yml` until the 4-platform
+   build completes; report failures if any.
+3. Agent: verify the draft release `v0.2.0` contains all 9 expected
+   artifacts (2× dmg, 2× app.tar.gz, AppImage, deb, rpm, msi, exe-setup) with
+   platform-labeled names.
+4. Operator: review the draft on GitHub, then publish it.
+5. Agent: verify `gh release view v0.2.0` shows `isDraft: false`; fetch the
+   public releases page anonymously (no auth) to confirm visibility; confirm
+   the README release badge renders.
+6. Agent: verify About section renders (description + topics) via
+   `gh repo view` and the public page.
+7. Operator: optionally download one artifact on the host platform and
+   smoke-test launch (quarantine note applies).
