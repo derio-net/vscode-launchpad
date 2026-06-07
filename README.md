@@ -1,9 +1,10 @@
 # VS Code Launchpad
 
 [![Tests](https://github.com/derio-net/vscode-launchpad/actions/workflows/test.yml/badge.svg)](https://github.com/derio-net/vscode-launchpad/actions/workflows/test.yml)
+[![Latest Release](https://img.shields.io/github/v/release/derio-net/vscode-launchpad)](https://github.com/derio-net/vscode-launchpad/releases/latest)
 [![Playwright](https://img.shields.io/badge/tested%20with-Playwright-45ba4b.svg?logo=playwright)](https://playwright.dev)
 
-View, search, and open all your VS Code workspaces from one place. A cross-platform web dashboard (and future desktop app) that reads workspace metadata from VS Code's storage directory and presents it in a clean, searchable interface.
+View, search, and open all your VS Code workspaces from one place. A cross-platform web dashboard and Tauri desktop app that reads workspace metadata from VS Code's storage directory and presents it in a clean, searchable interface.
 
 ![VS Code Launchpad Screenshot](screenshot.jpeg)
 
@@ -14,6 +15,7 @@ View, search, and open all your VS Code workspaces from one place. A cross-platf
 - 🚀 **Quick Open** — Click any workspace to open it directly in VS Code
 - 🔄 **Auto-Refresh** — Detects new workspaces every 30 seconds
 - 💡 **Path Tooltips** — Hover over workspace names to see the full file path
+- 📐 **Customizable Columns** — Resize columns and toggle visibility via the header context menu
 - 🐳 **Docker Support** — Deploy easily with Docker and docker-compose
 - 💻 **Desktop App** — Native app using Tauri (macOS, Windows, Linux)
 - 🔒 **Secure** — Runs only on localhost by default
@@ -50,7 +52,15 @@ See [docs/DOCKER.md](docs/DOCKER.md) for detailed Docker deployment instructions
 
 ### Desktop App
 
-Build the full application from source for your current platform:
+Download the installer for your platform from the [latest release](https://github.com/derio-net/vscode-launchpad/releases/latest):
+
+- **macOS**: Open the `.dmg` and drag the app into your Applications folder. Builds are not notarized, so macOS will quarantine them — clear the flag first: `/usr/bin/xattr -cr "/Applications/VS Code Launchpad.app"`
+- **Windows**: Run the `.msi` installer (or the `-setup.exe`)
+- **Linux**: Run the `.AppImage`, or install the `.deb` / `.rpm`
+
+#### Build from source
+
+Build the full application for your current platform:
 
 ```bash
 npm run tauri:build:full
@@ -58,7 +68,7 @@ npm run tauri:build:full
 
 Then install the built application:
 
-- **macOS**: Drag the `.app` from `src-tauri/target/release/bundle/macos/` into your Applications folder, or open the `.dmg`. Downloaded builds are not notarized, so macOS will block them. Remove the quarantine flag first: `/usr/bin/xattr -cr "/Applications/VS Code Launchpad.app"`
+- **macOS**: Drag the `.app` from `src-tauri/target/release/bundle/macos/` into your Applications folder, or open the `.dmg` (locally built apps carry no quarantine flag)
 - **Windows**: Run the `.msi` installer from `src-tauri/target/release/bundle/msi/`
 - **Linux**: Run the `.AppImage` or install the `.deb` from `src-tauri/target/release/bundle/`
 
