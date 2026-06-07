@@ -1,0 +1,12 @@
+profiles:
+  dev:
+    purpose: 'day-to-day development: docs, server, React frontend, tests (npm run
+      test:all, test:e2e)'
+    secrets:
+    - GH_TOKEN
+  builder:
+    purpose: local Tauri desktop builds (npm run tauri:build:full); Rust toolchain
+      + Node sidecar bundling
+    secrets:
+    - GH_TOKEN
+default: dev

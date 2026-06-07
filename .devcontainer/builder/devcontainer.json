@@ -1,0 +1,24 @@
+{
+  "name": "vscode-launchpad \u2014 builder",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/rust:1": {}
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev; pipx install uv 2>/dev/null || true; uv tool install 'git+https://github.com/derio-net/super-fr#subdirectory=packages/fr' || true; npm install",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind",
+  "workspaceFolder": "${localWorkspaceFolder}",
+  "runArgs": [
+    "--env-file",
+    "${localEnv:HOME}/.config/vk/secrets/vscode-launchpad/builder.env"
+  ],
+  "customizations": {
+    "vk": {
+      "profile": "builder",
+      "purpose": "local Tauri desktop builds (npm run tauri:build:full); Rust toolchain + Node sidecar bundling"
+    }
+  }
+}
