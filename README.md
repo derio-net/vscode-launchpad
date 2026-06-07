@@ -15,7 +15,7 @@ View, search, and open all your VS Code workspaces from one place. A cross-platf
 - 🚀 **Quick Open** — Click any workspace to open it directly in VS Code
 - 🔄 **Auto-Refresh** — Detects new workspaces every 30 seconds
 - 💡 **Path Tooltips** — Hover over workspace names to see the full file path
-- 📐 **Customizable Columns** — Resize columns and toggle visibility via the header context menu
+- 📐 **Customizable Columns** — Resize columns and toggle visibility via the Columns menu
 - 🐳 **Docker Support** — Deploy easily with Docker and docker-compose
 - 💻 **Desktop App** — Native app using Tauri (macOS, Windows, Linux)
 - 🔒 **Secure** — Runs only on localhost by default

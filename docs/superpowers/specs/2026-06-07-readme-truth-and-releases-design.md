@@ -61,7 +61,9 @@ pass after C4/C5.
 - Desktop App section keeps `tauri:build:full` as the from-source
   alternative.
 - Features list: add the column-customization features that already shipped
-  (resize, show/hide via right-click menu — `WorkspaceTable.js`).
+  (resize, show/hide via the "Columns ▼" dropdown — `WorkspaceTable.js:273`;
+  corrected in code review: the spec originally said "right-click menu",
+  which the code does not implement).
 - Add a latest-release badge next to the Tests badge (renders once v0.2.0
   publishes; acceptable to show "no release" between merge and publish).
 - All other verified claims (F9) stay as-is.

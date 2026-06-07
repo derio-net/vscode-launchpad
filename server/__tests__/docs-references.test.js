@@ -20,7 +20,10 @@ const MARKDOWN_FILES = [
   'CONTRIBUTING.md'
 ];
 
-// Backticked .md mentions that are intentionally NOT repo-root files
+// Backticked .md mentions that are intentionally NOT repo-root files.
+// If you backtick a filename in the docs that isn't a repo-root path
+// (an artifact name, an aspirational file, a subdir file written without
+// its path), add it here with a comment — otherwise this suite fails.
 const BACKTICK_REF_EXCEPTIONS = new Set([
   'tasks.md' // OpenSpec change artifact: openspec/changes/<change>/tasks.md
 ]);
