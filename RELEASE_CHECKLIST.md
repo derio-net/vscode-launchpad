@@ -7,11 +7,9 @@ Use this checklist when preparing a new release of VS Code Launchpad.
 ### Version Updates
 - [ ] Update version in `package.json`
 - [ ] Update version in `src-tauri/tauri.conf.json`
-- [ ] Update version in `src-tauri/Cargo.toml`
-- [ ] Update `CHANGELOG.md` with new version and changes
+- [ ] Update version in `src-tauri/Cargo.toml` (and the matching entry in `src-tauri/Cargo.lock`)
 
 ### Code Quality
-- [ ] Run linting: `npm run lint` (if available)
 - [ ] Test locally in development mode
 - [ ] Test desktop app build locally
 
@@ -50,8 +48,8 @@ Use this checklist when preparing a new release of VS Code Launchpad.
 ```bash
 git checkout main
 git pull origin main
-git tag -a v1.0.0 -m "Release version 1.0.0"
-git push origin v1.0.0
+git tag -a v0.2.0 -m "Release version 0.2.0"
+git push origin v0.2.0
 ```
 
 ### GitHub Actions
@@ -62,6 +60,7 @@ git push origin v1.0.0
   - [ ] macOS `.dmg` (Apple Silicon)
   - [ ] Linux `.AppImage`
   - [ ] Linux `.deb`
+  - [ ] Linux `.rpm`
   - [ ] Windows `.msi`
   - [ ] Windows `.exe`
 
@@ -90,7 +89,7 @@ git push origin v1.0.0
 
 ## Beta/Pre-Release
 
-For beta releases, use the tag format: `v1.0.0-beta.1`
+For beta releases, use the tag format: `v0.2.0-beta.1`
 
 - [ ] Mark release as "Pre-release" on GitHub
 - [ ] Add "beta" label to release notes
@@ -103,7 +102,7 @@ For critical bug fixes:
 1. Create a hotfix branch from the release tag
 2. Apply the fix
 3. Test thoroughly
-4. Create new tag with patch version bump (e.g., `v1.0.1`)
+4. Create new tag with patch version bump (e.g., `v0.2.1`)
 5. Fast-track through the checklist
 
 ## Notes
