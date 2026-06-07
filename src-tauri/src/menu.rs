@@ -25,18 +25,21 @@ pub fn create_menu(app: &tauri::AppHandle) -> Menu<tauri::Wry> {
             ],
         ).unwrap();
 
+        // Use predefined items so the standard edit shortcuts (Cmd+X/C/V/A/Z)
+        // route to the native responder chain and reach the webview. Custom
+        // MenuItems with these accelerators swallow the keystrokes instead.
         let edit_menu = Submenu::with_items(
             app,
             "Edit",
             true,
             &[
-                &MenuItem::with_id(app, "edit_undo", "Undo", true, Some("Cmd+Z")).unwrap(),
-                &MenuItem::with_id(app, "edit_redo", "Redo", true, Some("Cmd+Shift+Z")).unwrap(),
+                &PredefinedMenuItem::undo(app, None).unwrap(),
+                &PredefinedMenuItem::redo(app, None).unwrap(),
                 &PredefinedMenuItem::separator(app).unwrap(),
-                &MenuItem::with_id(app, "edit_cut", "Cut", true, Some("Cmd+X")).unwrap(),
-                &MenuItem::with_id(app, "edit_copy", "Copy", true, Some("Cmd+C")).unwrap(),
-                &MenuItem::with_id(app, "edit_paste", "Paste", true, Some("Cmd+V")).unwrap(),
-                &MenuItem::with_id(app, "edit_select_all", "Select All", true, Some("Cmd+A")).unwrap(),
+                &PredefinedMenuItem::cut(app, None).unwrap(),
+                &PredefinedMenuItem::copy(app, None).unwrap(),
+                &PredefinedMenuItem::paste(app, None).unwrap(),
+                &PredefinedMenuItem::select_all(app, None).unwrap(),
             ],
         ).unwrap();
 
@@ -100,18 +103,20 @@ pub fn create_menu(app: &tauri::AppHandle) -> Menu<tauri::Wry> {
             ],
         ).unwrap();
 
+        // Predefined items: standard edit shortcuts must reach the webview
+        // rather than being swallowed by no-op accelerators (see macOS note)
         let edit_menu = Submenu::with_items(
             app,
             "Edit",
             true,
             &[
-                &MenuItem::with_id(app, "edit_undo", "Undo", true, Some("Ctrl+Z")).unwrap(),
-                &MenuItem::with_id(app, "edit_redo", "Redo", true, Some("Ctrl+Y")).unwrap(),
+                &PredefinedMenuItem::undo(app, None).unwrap(),
+                &PredefinedMenuItem::redo(app, None).unwrap(),
                 &PredefinedMenuItem::separator(app).unwrap(),
-                &MenuItem::with_id(app, "edit_cut", "Cut", true, Some("Ctrl+X")).unwrap(),
-                &MenuItem::with_id(app, "edit_copy", "Copy", true, Some("Ctrl+C")).unwrap(),
-                &MenuItem::with_id(app, "edit_paste", "Paste", true, Some("Ctrl+V")).unwrap(),
-                &MenuItem::with_id(app, "edit_select_all", "Select All", true, Some("Ctrl+A")).unwrap(),
+                &PredefinedMenuItem::cut(app, None).unwrap(),
+                &PredefinedMenuItem::copy(app, None).unwrap(),
+                &PredefinedMenuItem::paste(app, None).unwrap(),
+                &PredefinedMenuItem::select_all(app, None).unwrap(),
             ],
         ).unwrap();
 

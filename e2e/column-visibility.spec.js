@@ -1,27 +1,53 @@
 /**
- * E2E tests for column visibility toggle functionality
+ * E2E tests for column visibility via the header context menu
  */
 const { test, expect } = require('@playwright/test');
 
 test.describe('Spec: User can toggle column visibility', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForSelector('table', { timeout: 15000 }).catch(() => {});
+    await page.waitForSelector('table', { timeout: 15000 });
   });
 
-  test('column visibility toggle button exists', async ({ page }) => {
-    // Look for column toggle button (may have various labels)
-    const toggleButton = page.locator(
-      'button[title*="column" i], button[aria-label*="column" i], .column-toggle, [data-testid="column-toggle"]'
-    );
-    
-    // If button exists, it should be visible
-    const count = await toggleButton.count();
-    if (count > 0) {
-      await expect(toggleButton.first()).toBeVisible();
-    }
-    // Test passes even if no toggle button found (feature may be implemented differently)
-    expect(true).toBeTruthy();
+  test('no standalone columns dropdown button is rendered', async ({ page }) => {
+    await expect(page.locator('button', { hasText: /columns/i })).toHaveCount(0);
+  });
+
+  test('right-clicking the header row opens the column context menu', async ({ page }) => {
+    await page.locator('thead tr').click({ button: 'right' });
+    await expect(page.locator('.column-context-menu')).toBeVisible();
+  });
+
+  test('select column is not listed in the menu', async ({ page }) => {
+    await page.locator('thead tr').click({ button: 'right' });
+    await expect(page.locator('.column-context-menu [data-menu-key]').first()).toBeVisible();
+    await expect(page.locator('.column-context-menu [data-menu-key="select"]')).toHaveCount(0);
+  });
+
+  test('Name checkbox is checked, disabled, and shows a lock', async ({ page }) => {
+    await page.locator('thead tr').click({ button: 'right' });
+    const nameCheckbox = page.locator('.column-context-menu [data-menu-key="name"] input');
+    await expect(nameCheckbox).toBeChecked();
+    await expect(nameCheckbox).toBeDisabled();
+    await expect(page.locator('.column-context-menu [data-menu-key="name"] .column-lock')).toBeVisible();
+  });
+
+  test('unchecking Connection hides the column; rechecking shows it', async ({ page }) => {
+    await page.locator('thead tr').click({ button: 'right' });
+    const connectionCheckbox = page.locator('.column-context-menu [data-menu-key="connection"] input');
+
+    await connectionCheckbox.click();
+    await expect(page.locator('th[data-column-key="connection"]')).toHaveCount(0);
+
+    await connectionCheckbox.click();
+    await expect(page.locator('th[data-column-key="connection"]')).toHaveCount(1);
+  });
+
+  test('Escape closes the menu', async ({ page }) => {
+    await page.locator('thead tr').click({ button: 'right' });
+    await expect(page.locator('.column-context-menu')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.column-context-menu')).toHaveCount(0);
   });
 
   test('Name column is visible by default', async ({ page }) => {
@@ -35,7 +61,6 @@ test.describe('Spec: User can toggle column visibility', () => {
   });
 
   test('Full Path column is hidden by default', async ({ page }) => {
-    // Full Path column should be hidden by default
     const fullPathHeader = page.locator('th', { hasText: 'Full Path' });
     const isVisible = await fullPathHeader.isVisible().catch(() => false);
     expect(isVisible).toBe(false);

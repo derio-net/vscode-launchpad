@@ -1,9 +1,7 @@
-# column-visibility-toggle Specification
+# Delta: column-visibility-toggle
 
-## Purpose
-Defines how users control which workspace table columns are visible: a right-click context menu on the header row, a permanently visible Name column, cross-session persistence, and the Claude column's auto-show behavior.
+## MODIFIED Requirements
 
-## Requirements
 ### Requirement: Users can toggle column visibility
 The system SHALL provide a context menu, opened by right-clicking the table header row, that allows users to show or hide individual data columns.
 
