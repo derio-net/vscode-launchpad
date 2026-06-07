@@ -1,5 +1,5 @@
 {
-  "name": "vscode-launchpad \u2014 dev",
+  "name": "vscode-launchpad — dev",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
