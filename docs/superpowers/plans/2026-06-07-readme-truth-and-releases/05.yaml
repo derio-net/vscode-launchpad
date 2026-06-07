@@ -1,0 +1,69 @@
+schema_version: 2
+phase:
+  number: 5
+  title: Live repo metadata (About section + stale draft cleanup)
+  tag: agentic
+  depends_on: []
+  tracking_issue: null
+tasks:
+- number: 1
+  title: Set the GitHub About section (HOST-side gh — container has no gh auth)
+  steps:
+  - id: P5.T1.S1
+    text: |
+      From the HOST (not via fr isolation exec — gh auth lives on the host):
+
+          gh repo edit derio-net/vscode-launchpad \
+            --description "View, search, and open all your VS Code workspaces from one place — web dashboard + Tauri desktop app" \
+            --add-topic vscode --add-topic workspaces --add-topic tauri \
+            --add-topic react --add-topic developer-tools --add-topic dashboard \
+            --add-topic productivity
+
+      (Operator approved this exact text in the 2026-06-07 Q&A.)
+  - id: P5.T1.S2
+    text: |
+      Verify:
+
+          gh repo view derio-net/vscode-launchpad --json description,repositoryTopics
+
+      Expected: description matches; 7 topics present.
+- number: 2
+  title: Delete the stale v0.1.10 draft release, keep the tag
+  steps:
+  - id: P5.T2.S1
+    text: |
+      From the HOST:
+
+          gh release delete v0.1.10 --repo derio-net/vscode-launchpad --yes
+
+      Do NOT pass --cleanup-tag: the v0.1.10 tag must remain so the v0.2.0 release notes can diff against it.
+  - id: P5.T2.S2
+    text: |
+      Verify:
+
+          gh release list --repo derio-net/vscode-launchpad
+          git ls-remote --tags origin v0.1.10
+
+      Expected: release list shows no v0.1.10 entry; the tag ref still exists on origin.
+state:
+  steps:
+    P5.T1.S1:
+      state: ' '
+      ticked_at: null
+      note: null
+    P5.T1.S2:
+      state: ' '
+      ticked_at: null
+      note: null
+    P5.T2.S1:
+      state: ' '
+      ticked_at: null
+      note: null
+    P5.T2.S2:
+      state: ' '
+      ticked_at: null
+      note: null
+  completion:
+    at: null
+    note: null
+    observed_prs: []

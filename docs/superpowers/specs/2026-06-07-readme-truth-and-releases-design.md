@@ -109,6 +109,12 @@ pass after C4/C5.
   exists; not a README claim).
 - The in-flight table-UX design work (S2296) — separate change.
 
+## Implementation Plans
+
+| Plan | Repo | Status | Notes |
+|------|------|--------|-------|
+| 2026-06-07-readme-truth-and-releases | `derio-net/vscode-launchpad` | `2026-06-07-readme-truth-and-releases` | — |
+
 ## Test Plan
 
 Post-merge, operator-driven; the agent drives checks, the operator does what

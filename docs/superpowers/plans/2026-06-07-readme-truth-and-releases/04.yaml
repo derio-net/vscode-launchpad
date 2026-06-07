@@ -1,0 +1,54 @@
+schema_version: 2
+phase:
+  number: 4
+  title: Version alignment to 0.2.0
+  tag: agentic
+  depends_on: []
+  tracking_issue: null
+tasks:
+- number: 1
+  title: Align all version fields to 0.2.0
+  steps:
+  - id: P4.T1.S1
+    text: |
+      1. `package.json` line 3: `"version": "1.0.0"` → `"version": "0.2.0"`.
+      2. Refresh the lockfile header: `npm install --package-lock-only` (updates the two version fields in package-lock.json without touching node_modules).
+  - id: P4.T1.S2
+    text: |
+      `src-tauri/tauri.conf.json` line 4: `"version": "1.0.0"` → `"version": "0.2.0"`.
+      (CI overwrites this from the git tag at release time; aligning it keeps local builds honest.)
+  - id: P4.T1.S3
+    text: |
+      1. `src-tauri/Cargo.toml` line 3: `version = "1.0.0"` → `version = "0.2.0"`.
+      2. `src-tauri/Cargo.lock`: find the `[[package]]` entry with `name = "vscode-launchpad"` and change its `version = "1.0.0"` line to `version = "0.2.0"` (the dev container has no cargo; this single-line edit is exactly what `cargo update -p vscode-launchpad` would write).
+  - id: P4.T1.S4
+    text: |
+      Verify alignment and absence of strays:
+
+          grep -n '"version"' package.json src-tauri/tauri.conf.json
+          grep -n '^version' src-tauri/Cargo.toml
+          grep -B1 -A1 'name = "vscode-launchpad"' src-tauri/Cargo.lock
+
+      Expected: every hit shows 0.2.0. Then run the server suite once more: `npx jest --config jest.server.config.js` — green.
+state:
+  steps:
+    P4.T1.S1:
+      state: ' '
+      ticked_at: null
+      note: null
+    P4.T1.S2:
+      state: ' '
+      ticked_at: null
+      note: null
+    P4.T1.S3:
+      state: ' '
+      ticked_at: null
+      note: null
+    P4.T1.S4:
+      state: ' '
+      ticked_at: null
+      note: null
+  completion:
+    at: null
+    note: null
+    observed_prs: []

@@ -1,0 +1,80 @@
+schema_version: 2
+phase:
+  number: 3
+  title: README truth and Download section
+  tag: agentic
+  depends_on:
+  - 1
+  tracking_issue: null
+tasks:
+- number: 1
+  title: Make every README claim true and add the Download path
+  steps:
+  - id: P3.T1.S1
+    text: |
+      In `README.md` line 6, change:
+
+          A cross-platform web dashboard (and future desktop app) that reads workspace metadata
+
+      to:
+
+          A cross-platform web dashboard and Tauri desktop app that reads workspace metadata
+  - id: P3.T1.S2
+    text: |
+      Restructure the Desktop App section (README.md lines 51-65) into download-first, build-second:
+
+      1. New `### Desktop App` intro: "Download the installer for your platform from the [latest release](https://github.com/derio-net/vscode-launchpad/releases/latest):" followed by per-platform bullets:
+         - macOS: open the `.dmg` and drag the app into Applications. Builds are not notarized, so macOS will quarantine them — clear the flag first with `/usr/bin/xattr -cr "/Applications/VS Code Launchpad.app"`
+         - Windows: run the `.msi` installer (or the `-setup.exe`)
+         - Linux: run the `.AppImage`, or install the `.deb` / `.rpm`
+      2. Follow with a `#### Build from source` subsection keeping the `npm run tauri:build:full` instructions and bundle paths, WITHOUT the quarantine note (a locally built app has no quarantine flag).
+      3. Keep the closing sentence linking to GitHub Actions + BUILD.md.
+  - id: P3.T1.S3
+    text: |
+      1. Add a latest-release badge after the Tests badge (README.md lines 3-4):
+
+          [![Latest Release](https://img.shields.io/github/v/release/derio-net/vscode-launchpad)](https://github.com/derio-net/vscode-launchpad/releases/latest)
+
+      (It renders "no release" until v0.2.0 publishes — accepted in the Q&A.)
+      2. In the Features list, add a bullet for the shipped column customization (after the Path Tooltips bullet):
+
+          - 📐 Customizable Columns — Resize columns and toggle visibility via the header context menu
+
+      Verify wording against src/components/WorkspaceTable.js before committing (resize handles + visibility context menu exist; do NOT claim drag-reorder — that is unimplemented design work).
+- number: 2
+  title: Verify README changes
+  steps:
+  - id: P3.T2.S1
+    text: |
+      Run `npx jest --config jest.server.config.js --testPathPattern="docs-references"`.
+      Expected: green — every link in the rewritten README resolves.
+  - id: P3.T2.S2
+    text: |
+      Run the frontend suite to confirm no collateral damage: `npm test`.
+      Expected: all frontend tests pass.
+state:
+  steps:
+    P3.T1.S1:
+      state: ' '
+      ticked_at: null
+      note: null
+    P3.T1.S2:
+      state: ' '
+      ticked_at: null
+      note: null
+    P3.T1.S3:
+      state: ' '
+      ticked_at: null
+      note: null
+    P3.T2.S1:
+      state: ' '
+      ticked_at: null
+      note: null
+    P3.T2.S2:
+      state: ' '
+      ticked_at: null
+      note: null
+  completion:
+    at: null
+    note: null
+    observed_prs: []
