@@ -113,7 +113,7 @@ pass after C4/C5.
 
 ## Implementation Plans
 
-| Plan | Repo | Status | Notes |
+| Plan | Repo | File | Depends on |
 |------|------|--------|-------|
 | 2026-06-07-readme-truth-and-releases | `derio-net/vscode-launchpad` | `2026-06-07-readme-truth-and-releases` | — |
 | 2026-06-07-readme-truth-and-releases-rework-1 | `derio-net/vscode-launchpad` | `2026-06-07-readme-truth-and-releases-rework-1` | 2026-06-07-readme-truth-and-releases |
