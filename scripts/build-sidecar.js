@@ -44,3 +44,16 @@ execFileSync('npx', [
 ], { stdio: 'inherit' });
 
 console.log(`Sidecar built: ${output}`);
+
+// Ad-hoc sign on macOS to avoid hardened runtime + notarization requirement
+// on macOS 26+. Without this, if the binary gets developer-signed during
+// `tauri build`, macOS 26+ Gatekeeper rejects it (no notarization ticket).
+if (os.platform() === 'darwin') {
+  try {
+    execFileSync('codesign', ['--remove-signature', output], { stdio: 'ignore' });
+    execFileSync('codesign', ['-s', '-', output], { stdio: 'inherit' });
+    console.log(`Ad-hoc signed: ${output}`);
+  } catch (e) {
+    console.warn(`Warning: could not ad-hoc sign sidecar (non-fatal): ${e.message}`);
+  }
+}
