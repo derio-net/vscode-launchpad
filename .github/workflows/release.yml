@@ -98,21 +98,36 @@ jobs:
           echo "To enable signing, add APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, and APPLE_SIGNING_IDENTITY secrets."
           echo "See docs/MACOS-CODE-SIGNING.md for setup instructions."
 
-      - name: Build Tauri app
-        id: tauri-build
-        uses: tauri-apps/tauri-action@v0
+      # macOS build: build locally so we can fix sidecar signing before upload
+      - name: Import Apple code signing certificate
+        if: matrix.platform == 'macos-latest' && env.APPLE_CERTIFICATE != ''
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="signing.keychain"
+          KEYCHAIN_PATH="$RUNNER_TEMP/$KEYCHAIN"
+          security create-keychain -p temp "$KEYCHAIN_PATH" || true
+          security default-keychain -s "$KEYCHAIN_PATH"
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temp "$KEYCHAIN_PATH"
+          echo "Certificate imported"
+
+      - name: Build Tauri app (macOS)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'VS Code Launchpad ${{ github.ref_name }}'
-          releaseBody: ''
-          releaseDraft: true
-          prerelease: ${{ contains(github.ref_name, 'beta') }}
-          args: ${{ matrix.args }}
+        run: |
+          ARGS="${{ matrix.args }}"
+          if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+            npx tauri build $ARGS
+          else
+            npx tauri build $ARGS
+          fi
+          echo "Tauri build complete"
 
       # macOS 26+ requires notarization for binaries signed with a developer
       # certificate AND hardened runtime. The sidecar (pkg-bundled Node.js) gets
@@ -125,29 +140,28 @@ jobs:
       # re-apply the hardened runtime to the sidecar. Without --deep, the
       # sidecar's ad-hoc signature is preserved and the bundle CodeDirectory
       # is updated with the correct hashes.
-      - name: Fix sidecar signing for macOS 26+ notarization requirement
+      - name: Fix sidecar signing for macOS 26+ and create release artifacts
         if: matrix.platform == 'macos-latest'
         shell: bash
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          APP_PATH="src-tauri/target/release/bundle/macos/VS Code Launchpad.app"
+          TRIPLE="${{ matrix.triple }}"
+          VERSION="${GITHUB_REF_NAME#v}"
+          APP_PATH="src-tauri/target/$TRIPLE/release/bundle/macos/VS Code Launchpad.app"
           SIDECAR_PATH="$APP_PATH/Contents/MacOS/sidecar-vscode-dashboard"
 
-          if [ ! -f "$SIDECAR_PATH" ]; then
-            echo "Warning: Sidecar binary not found at $SIDECAR_PATH, skipping fixup"
-            exit 0
-          fi
-
+          echo "=== Sidecar before fix ==="
+          codesign -d -vvv "$SIDECAR_PATH" 2>&1 | grep -E "flags=|Signature=|Authority=" || echo "  (not signed)"
+        
           echo "Removing developer signature from sidecar..."
           codesign --remove-signature "$SIDECAR_PATH"
 
-          echo "Applying ad-hoc signature to sidecar (avoids hardened runtime)..."
+          echo "Applying ad-hoc signature to sidecar..."
           codesign -s - "$SIDECAR_PATH"
 
-          # Re-sign the bundle WITHOUT --deep so the sidecar keeps its ad-hoc
-          # signature. The bundle CodeDirectory is updated with the current
-          # nested-code hashes, so validation still passes.
           if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
             echo "Re-signing bundle with developer identity: $APPLE_SIGNING_IDENTITY"
             codesign -f -s "$APPLE_SIGNING_IDENTITY" "$APP_PATH"
@@ -156,13 +170,48 @@ jobs:
             codesign -f -s - "$APP_PATH"
           fi
 
-          echo "Verifying sidecar signature:"
+          echo "=== Sidecar after fix ==="
           codesign -d -vvv "$SIDECAR_PATH" 2>&1 | grep -E "flags=|Signature=" || true
 
-          echo "Verifying app bundle signature:"
+          echo "=== Bundle verification ==="
           codesign --verify -v --strict --deep "$APP_PATH" 2>&1
 
+          # Create .app.tar.gz from the fixed bundle
+          MACOS_BUNDLE_DIR="src-tauri/target/$TRIPLE/release/bundle/macos"
+          DMG_DIR="src-tauri/target/$TRIPLE/release/bundle/dmg"
+          ARCH=""
+          if echo "$TRIPLE" | grep -q "aarch64"; then ARCH="aarch64"; else ARCH="x64"; fi
+
+          TARBALL="VS.Code.Launchpad_macos_${VERSION}_${ARCH}.app.tar.gz"
+          echo "Creating $TARBALL..."
+          tar czf "$TARBALL" -C "$MACOS_BUNDLE_DIR" "VS Code Launchpad.app"
+          echo "Created: $(ls -lh "$TARBALL" | awk '{print $5}')"
+
+          # Recreate .dmg from the fixed .app
+          DMG="VS.Code.Launchpad_macos_${VERSION}_${ARCH}.dmg"
+          echo "Creating $DMG..."
+          hdiutil create -volname "VS Code Launchpad" \
+            -srcfolder "$APP_PATH" \
+            -ov -format UDZO \
+            "$DMG" 2>&1
+          echo "Created: $(ls -lh "$DMG" | awk '{print $5}')"
+
+          # Upload to release (create draft if this is the first artifact)
+          echo "Uploading artifacts to release ${{ github.ref_name }}..."
+          gh release upload "${{ github.ref_name }}" "$TARBALL" "$DMG" \
+            --repo "${{ github.repository }}" \
+            --clobber || {
+            echo "Release doesn't exist yet, creating draft..."
+            gh release create "${{ github.ref_name }}" "$TARBALL" "$DMG" \
+              --repo "${{ github.repository }}" \
+              --title "VS Code Launchpad ${{ github.ref_name }}" \
+              --draft \
+              --notes ""
+          }
+          echo "macOS $ARCH artifacts uploaded"
+
       - name: Rename release assets with platform label
+        if: matrix.platform != 'macos-latest'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -170,7 +219,6 @@ jobs:
         run: |
           PLATFORM=""
           case "${{ matrix.platform }}" in
-            macos-latest) PLATFORM="macos" ;;
             ubuntu-22.04) PLATFORM="linux" ;;
             windows-latest) PLATFORM="windows" ;;
           esac
