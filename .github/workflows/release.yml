@@ -120,11 +120,15 @@ jobs:
       # notarized (no Apple notarization credentials configured). Ad-hoc signing
       # the sidecar avoids the notarization requirement while keeping the main
       # app properly signed.
+      #
+      # IMPORTANT: Do NOT use --deep when re-signing the bundle — that would
+      # re-apply the hardened runtime to the sidecar. Without --deep, the
+      # sidecar's ad-hoc signature is preserved and the bundle CodeDirectory
+      # is updated with the correct hashes.
       - name: Fix sidecar signing for macOS 26+ notarization requirement
-        if: matrix.platform == 'macos-latest' && env.APPLE_CERTIFICATE != ''
+        if: matrix.platform == 'macos-latest'
         shell: bash
         env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
           APP_PATH="src-tauri/target/release/bundle/macos/VS Code Launchpad.app"
@@ -138,22 +142,25 @@ jobs:
           echo "Removing developer signature from sidecar..."
           codesign --remove-signature "$SIDECAR_PATH"
 
-          echo "Applying ad-hoc signature to sidecar..."
+          echo "Applying ad-hoc signature to sidecar (avoids hardened runtime)..."
           codesign -s - "$SIDECAR_PATH"
 
+          # Re-sign the bundle WITHOUT --deep so the sidecar keeps its ad-hoc
+          # signature. The bundle CodeDirectory is updated with the current
+          # nested-code hashes, so validation still passes.
           if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
-            echo "Re-signing app bundle with developer identity: $APPLE_SIGNING_IDENTITY"
-            codesign --deep -f -s "$APPLE_SIGNING_IDENTITY" "$APP_PATH"
+            echo "Re-signing bundle with developer identity: $APPLE_SIGNING_IDENTITY"
+            codesign -f -s "$APPLE_SIGNING_IDENTITY" "$APP_PATH"
           else
-            echo "No signing identity found, applying ad-hoc signature to bundle..."
-            codesign --deep -f -s - "$APP_PATH"
+            echo "No signing identity, ad-hoc signing bundle..."
+            codesign -f -s - "$APP_PATH"
           fi
 
           echo "Verifying sidecar signature:"
           codesign -d -vvv "$SIDECAR_PATH" 2>&1 | grep -E "flags=|Signature=" || true
 
           echo "Verifying app bundle signature:"
-          codesign --verify -v --strict --deep "$APP_PATH" 2>&1 || echo "Warning: bundle verification may show expected warnings"
+          codesign --verify -v --strict --deep "$APP_PATH" 2>&1
 
       - name: Rename release assets with platform label
         shell: bash
