@@ -131,6 +131,22 @@ jobs:
           ./node_modules/.bin/tauri build ${{ matrix.args }}
           echo "Tauri build complete"
 
+      - name: Import Apple code signing certificate
+        if: matrix.platform == 'macos-latest' && env.APPLE_CERTIFICATE != ''
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="signing.keychain"
+          KEYCHAIN_PATH="$RUNNER_TEMP/$KEYCHAIN"
+          security create-keychain -p temp "$KEYCHAIN_PATH" || true
+          security default-keychain -s "$KEYCHAIN_PATH"
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temp "$KEYCHAIN_PATH"
+          echo "Certificate imported"
+
       # macOS 26+ sidecar signing fix + artifact upload
       - name: Create and upload release artifacts (macOS)
         if: matrix.platform == 'macos-latest'
@@ -140,8 +156,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TRIPLE="${{ matrix.triple }}"
+          # --target outputs to target/<triple>/; without it, target/release/
+          if [ -d "src-tauri/target/$TRIPLE/release" ]; then
+            TARGET_DIR="src-tauri/target/$TRIPLE/release"
+          else
+            TARGET_DIR="src-tauri/target/release"
+          fi
           VERSION="${GITHUB_REF_NAME#v}"
-          APP_PATH="src-tauri/target/$TRIPLE/release/bundle/macos/VS Code Launchpad.app"
+          APP_PATH="$TARGET_DIR/bundle/macos/VS Code Launchpad.app"
           SIDECAR_PATH="$APP_PATH/Contents/MacOS/sidecar-vscode-dashboard"
 
           # Fix sidecar signing for macOS 26+ (see docs/superpowers/debugging/2026-07-21-sidecar-macos-26-compat.md)
@@ -164,7 +186,7 @@ jobs:
           ARCH="$(echo "$TRIPLE" | grep -q aarch64 && echo "aarch64" || echo "x64")"
           TARBALL="VS.Code.Launchpad_macos_${VERSION}_${ARCH}.app.tar.gz"
           DMG="VS.Code.Launchpad_macos_${VERSION}_${ARCH}.dmg"
-          MACOS_BUNDLE_DIR="src-tauri/target/$TRIPLE/release/bundle/macos"
+          MACOS_BUNDLE_DIR="$TARGET_DIR/bundle/macos"
 
           tar czf "$TARBALL" -C "$MACOS_BUNDLE_DIR" "VS Code Launchpad.app"
           hdiutil create -volname "VS Code Launchpad" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG" 2>&1
@@ -197,7 +219,13 @@ jobs:
             windows-latest) PLATFORM="windows" ;;
           esac
 
-          BUNDLE_DIR="src-tauri/target/$TRIPLE/release/bundle"
+          # --target outputs to target/<triple>/; without it, target/release/
+          if [ -d "src-tauri/target/$TRIPLE/release" ]; then
+            TARGET_DIR="src-tauri/target/$TRIPLE/release"
+          else
+            TARGET_DIR="src-tauri/target/release"
+          fi
+          BUNDLE_DIR="$TARGET_DIR/bundle"
           ls -laR "$BUNDLE_DIR"
 
           ARTIFACTS=()
