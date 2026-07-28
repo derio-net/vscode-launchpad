@@ -226,11 +226,23 @@ jobs:
             TARGET_DIR="src-tauri/target/release"
           fi
           BUNDLE_DIR="$TARGET_DIR/bundle"
-          ls -laR "$BUNDLE_DIR"
+          if [ ! -d "$BUNDLE_DIR" ]; then
+            echo "::warning::Bundle directory not found at $BUNDLE_DIR"
+            ls -laR "$TARGET_DIR"
+            exit 0
+          fi
+          echo "Bundle contents:"
+          find "$BUNDLE_DIR" -type f
 
           ARTIFACTS=()
           while IFS= read -r file; do
+            [ -z "$file" ] && continue
             base="$(basename "$file")"
+            # Only upload bundle artifacts, not icons/metadata
+            case "$base" in
+              *.deb|*.AppImage|*.rpm|*.msi|*.exe|*.dmg|*.app.tar.gz) ;;
+              *) echo "Skipping $base" ; continue ;;
+            esac
             new_name="$(echo "$base" | sed "s|VS Code Launchpad|VS.Code.Launchpad_${PLATFORM}|" | sed 's/ /./g')"
             cp "$file" "$new_name"
             ARTIFACTS+=("$new_name")
