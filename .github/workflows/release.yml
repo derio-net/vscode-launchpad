@@ -140,11 +140,7 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
           ARGS="${{ matrix.args }}"
-          if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
-            npx tauri build $ARGS
-          else
-            npx tauri build $ARGS
-          fi
+          npx tauri build --ci $ARGS
           echo "Tauri build complete"
 
       # macOS 26+ requires notarization for binaries signed with a developer
