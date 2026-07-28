@@ -70,6 +70,11 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri"
+
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -140,7 +145,7 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
           ARGS="${{ matrix.args }}"
-          npx tauri build --ci $ARGS
+          ./node_modules/.bin/tauri build $ARGS
           echo "Tauri build complete"
 
       # macOS 26+ requires notarization for binaries signed with a developer
