@@ -177,6 +177,31 @@ export async function killClaudeSessions(pids) {
 }
 
 /**
+ * Get the Claude Code hook installation status
+ * @returns {Promise<{status: 'installed'|'needs-repair'|'not-installed'|'unsupported', reason?: string, scriptPath: string, legacy: boolean, events: Object}>}
+ */
+export async function getClaudeHooks() {
+  return apiRequest('/api/claude-hooks');
+}
+
+/**
+ * Install (or repair) the Claude Code hooks. Not retried: a failure here is a
+ * meaningful server answer (unsupported, invalid settings.json), not a blip.
+ * @returns {Promise<Object>} - New hook status
+ */
+export async function installClaudeHooks() {
+  return apiRequest('/api/claude-hooks/install', { method: 'POST', body: {}, retries: 1 });
+}
+
+/**
+ * Remove the Claude Code hooks.
+ * @returns {Promise<Object>} - New hook status
+ */
+export async function removeClaudeHooks() {
+  return apiRequest('/api/claude-hooks/remove', { method: 'POST', body: {}, retries: 1 });
+}
+
+/**
  * Check if the API is available (health check)
  * @returns {Promise<boolean>} - True if API is available
  */
@@ -261,6 +286,9 @@ export default {
   checkHealth,
   waitForApi,
   getClaudeSessions,
+  getClaudeHooks,
+  installClaudeHooks,
+  removeClaudeHooks,
   getEnvironment,
   getDiagnostics
 };

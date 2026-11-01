@@ -119,7 +119,7 @@ export function useClaudeSessions(workspaces) {
     };
   }, [sessions, zombies]);
 
-  return { sessions, sessionMap, summary, transitions, zombies, hookConfigured };
+  return { sessions, sessionMap, summary, transitions, zombies, hookConfigured, refresh: fetchSessions };
 }
 
 export default useClaudeSessions;

@@ -28,12 +28,12 @@
 
 ## 5. Frontend
 
-- [ ] 5.1 Add `getClaudeHooks()`, `installClaudeHooks()`, `removeClaudeHooks()` to `src/api/client.js` (POSTs send `Content-Type: application/json`), with tests covering both the Tauri and fetch paths
-- [ ] 5.2 Create `src/hooks/useClaudeHookStatus.js` (fetch on mount, `install`/`remove` actions, error state, then trigger a refetch of `useClaudeSessions`), with tests
-- [ ] 5.3 Create `src/components/ClaudeHookControl.js`: Enable / Repair / Disable per status, a confirmation before Disable (Tauri confirmation dialog in desktop mode, matching the existing pattern), error display, hidden when `unsupported`; with tests for each status
-- [ ] 5.4 Create `src/components/ClaudeHookRepairBanner.js`: shown only for `needs-repair`, Repair button, dismissal in `localStorage` keyed by status (wrapped in try/catch); with tests
-- [ ] 5.5 Wire both into `src/components/Dashboard.js` (control in the header, banner above the table) using the existing design tokens; confirm that installing reveals the Claude column without a reload
-- [ ] 5.6 Add a Playwright test in `e2e/` with the API mocked to `not-installed` → Enable → column visible
+- [x] 5.1 Add `getClaudeHooks()`, `installClaudeHooks()`, `removeClaudeHooks()` to `src/api/client.js` (POSTs send `Content-Type: application/json`), with tests covering both the Tauri and fetch paths
+- [x] 5.2 Create `src/hooks/useClaudeHookStatus.js` (fetch on mount, `install`/`remove` actions, error state, then trigger a refetch of `useClaudeSessions`), with tests
+- [x] 5.3 Create `src/components/ClaudeHookControl.js`: Enable / Repair / Disable per status, a confirmation before Disable (Tauri confirmation dialog in desktop mode, matching the existing pattern), error display, hidden when `unsupported`; with tests for each status
+- [x] 5.4 Create `src/components/ClaudeHookRepairBanner.js`: shown only for `needs-repair`, Repair button, dismissal in `localStorage` keyed by status (wrapped in try/catch); with tests
+- [x] 5.5 Wire both into `src/components/Dashboard.js` (control in the header, banner above the table) using the existing design tokens; confirm that installing reveals the Claude column without a reload
+- [x] 5.6 Add a Playwright test in `e2e/` with the API mocked to `not-installed` → Enable → column visible
 
 ## 6. CLI script, docs, cleanup
 
