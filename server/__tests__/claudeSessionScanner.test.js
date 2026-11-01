@@ -1,7 +1,7 @@
 const path = require('path');
 const os = require('os');
 
-jest.mock('fs', () => ({ promises: { readdir: jest.fn(), readFile: jest.fn(), unlink: jest.fn() } }));
+jest.mock('fs', () => ({ promises: { readdir: jest.fn(), readFile: jest.fn(), unlink: jest.fn(), access: jest.fn() } }));
 jest.mock('child_process', () => ({ execFile: jest.fn() }));
 
 const fs = require('fs').promises;
@@ -44,7 +44,15 @@ describe('claudeSessionScanner', () => {
 
     it('returns true when all three hooks are configured', async () => {
       fs.readFile.mockResolvedValue(JSON.stringify({ hooks: allThreeHooks }));
+      fs.access.mockResolvedValue(undefined);
       expect(await scanner.checkHookConfigured()).toBe(true);
+      expect(fs.access).toHaveBeenCalledWith('/path/to/claude-session-hook.sh');
+    });
+
+    it('returns false when the hook commands point at a missing script (moved checkout)', async () => {
+      fs.readFile.mockResolvedValue(JSON.stringify({ hooks: allThreeHooks }));
+      fs.access.mockRejectedValue(new Error('ENOENT'));
+      expect(await scanner.checkHookConfigured()).toBe(false);
     });
 
     it('returns false when only Notification hook configured', async () => {

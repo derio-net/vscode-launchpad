@@ -133,6 +133,8 @@ LaunchPad can show live Claude Code session status per workspace — which sessi
 
 The script backs up your settings before modifying them, is idempotent, and only adds/removes LaunchPad hooks.
 
+Hooks store the script's absolute path, so **if you move or re-clone the repo, re-run `./scripts/install-claude-hooks.sh` from the new location** — it replaces hooks that point at the old checkout. `--check` (and the LaunchPad UI) treat hooks whose script no longer exists as not installed.
+
 **Manual:** Add the following to your `~/.claude/settings.json` (adjust the path to where you installed LaunchPad):
 
 ```json

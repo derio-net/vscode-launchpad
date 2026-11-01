@@ -43,6 +43,53 @@ if [ ! -x "$HOOK_SCRIPT" ]; then
   info "Made hook script executable"
 fi
 
+# ─── Helpers over the installed hooks ───
+#
+# Hook commands hold an absolute script path (hooks run from any cwd), so a
+# checkout that moves leaves commands that still match by name but point at a
+# missing file. Every decision below looks at the actual path, not just the name.
+
+# Our hook commands, one per line, across all three events.
+our_commands() {
+  jq -r --arg m "$HOOK_MARKER" '
+    (.hooks // {}) | .Notification, .UserPromptSubmit, .Stop
+    | arrays | .[] | .hooks[]? | .command | strings | select(contains($m))
+  ' "$SETTINGS_FILE"
+}
+
+# True when every one of the three events has one of our commands.
+all_events_hooked() {
+  jq -e --arg m "$HOOK_MARKER" '
+    (.hooks // {}) as $h
+    | ["Notification", "UserPromptSubmit", "Stop"]
+    | all(.[]; ($h[.] // []) | arrays | any(.[]; any(.hooks[]?; .command | strings | contains($m))))
+  ' "$SETTINGS_FILE" &>/dev/null
+}
+
+# The script path in a hook command: up to and including the marker, so
+# trailing args (" working", " idle") are dropped.
+script_path_of() {
+  printf '%s%s\n' "${1%%"$HOOK_MARKER"*}" "$HOOK_MARKER"
+}
+
+# Drop every hook entry that runs our script (from any path), keeping all others.
+strip_our_hooks() {
+  local tmp
+  tmp=$(mktemp)
+  jq --arg m "$HOOK_MARKER" '
+    def strip: if type == "array" then [.[] | select(.hooks | all(.command | contains($m) | not))] else . end;
+    if .hooks then
+      .hooks.Notification     |= strip |
+      .hooks.UserPromptSubmit |= strip |
+      .hooks.Stop             |= strip |
+      if .hooks.Notification     == [] then del(.hooks.Notification)     else . end |
+      if .hooks.UserPromptSubmit == [] then del(.hooks.UserPromptSubmit) else . end |
+      if .hooks.Stop             == [] then del(.hooks.Stop)             else . end |
+      if .hooks == {} then del(.hooks) else . end
+    else . end
+  ' "$SETTINGS_FILE" > "$tmp" && mv "$tmp" "$SETTINGS_FILE"
+}
+
 # ─── Check mode ───
 
 if [ "${1:-}" = "--check" ]; then
@@ -50,13 +97,23 @@ if [ "${1:-}" = "--check" ]; then
     warn "Settings file not found: $SETTINGS_FILE"
     exit 1
   fi
-  if jq -e ".hooks.Notification[]?.hooks[]? | select(.command | contains(\"$HOOK_MARKER\"))" "$SETTINGS_FILE" &>/dev/null; then
-    info "Claude Launchpad hooks are installed"
-    exit 0
-  else
+  if ! all_events_hooked; then
     warn "Claude Launchpad hooks are NOT installed"
     exit 1
   fi
+  missing=0
+  while IFS= read -r script; do
+    if [ ! -f "$script" ]; then
+      error "Hook points at a missing script: $script"
+      missing=1
+    fi
+  done < <(our_commands | while IFS= read -r cmd; do script_path_of "$cmd"; done | sort -u)
+  if [ "$missing" -ne 0 ]; then
+    warn "Hooks are stale (checkout moved?). Re-run: $0"
+    exit 1
+  fi
+  info "Claude Launchpad hooks are installed"
+  exit 0
 fi
 
 # ─── Remove mode ───
@@ -67,20 +124,7 @@ if [ "${1:-}" = "--remove" ]; then
     exit 0
   fi
 
-  # Remove hook entries that contain our script name
-  tmp=$(mktemp)
-  jq "
-    # Remove matching entries from each hook event array
-    .hooks.Notification  |= (if type == \"array\" then [.[] | select(.hooks | all(.command | contains(\"$HOOK_MARKER\") | not))] else . end) |
-    .hooks.UserPromptSubmit |= (if type == \"array\" then [.[] | select(.hooks | all(.command | contains(\"$HOOK_MARKER\") | not))] else . end) |
-    .hooks.Stop          |= (if type == \"array\" then [.[] | select(.hooks | all(.command | contains(\"$HOOK_MARKER\") | not))] else . end) |
-    # Clean up empty arrays
-    if .hooks.Notification  == [] then del(.hooks.Notification)  else . end |
-    if .hooks.UserPromptSubmit == [] then del(.hooks.UserPromptSubmit) else . end |
-    if .hooks.Stop          == [] then del(.hooks.Stop)          else . end |
-    if .hooks == {} then del(.hooks) else . end
-  " "$SETTINGS_FILE" > "$tmp" && mv "$tmp" "$SETTINGS_FILE"
-
+  strip_our_hooks
   info "Hooks removed from $SETTINGS_FILE"
   exit 0
 fi
@@ -103,10 +147,23 @@ fi
 cp "$SETTINGS_FILE" "${SETTINGS_FILE}.bak"
 info "Backed up settings to ${SETTINGS_FILE}.bak"
 
-# Check if hooks already installed
-if jq -e ".hooks.Notification[]?.hooks[]? | select(.command | contains(\"$HOOK_MARKER\"))" "$SETTINGS_FILE" &>/dev/null; then
-  info "Hooks already installed — nothing to do"
-  exit 0
+# Already installed for THIS checkout? Only then is there nothing to do.
+# Hooks pointing anywhere else (a moved or deleted checkout) are replaced.
+existing=$(our_commands)
+if [ -n "$existing" ]; then
+  current=1
+  while IFS= read -r cmd; do
+    [ "$(script_path_of "$cmd")" = "$HOOK_SCRIPT" ] || current=0
+  done <<< "$existing"
+  if [ "$current" -eq 1 ] && all_events_hooked; then
+    info "Hooks already installed — nothing to do"
+    exit 0
+  fi
+  warn "Replacing existing hooks that point elsewhere:"
+  while IFS= read -r cmd; do
+    script_path_of "$cmd"
+  done <<< "$existing" | sort -u | sed 's/^/    /'
+  strip_our_hooks
 fi
 
 # Build the three hook entries

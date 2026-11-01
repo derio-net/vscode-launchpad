@@ -24,9 +24,21 @@ const isProcessAlive = (pid) => {
 
 // ─── Hook Configuration Check ───
 
+const HOOK_EVENTS = ['Notification', 'UserPromptSubmit', 'Stop'];
+
 /**
- * Check if ~/.claude/settings.json has our hook script configured.
- * Returns true if the script appears in any hook configuration.
+ * The script path inside a hook command: everything up to and including the
+ * script name, so trailing args (" working", " idle") are dropped and paths
+ * containing spaces survive.
+ */
+const hookScriptPathOf = (command) =>
+  command.slice(0, command.indexOf(HOOK_SCRIPT_NAME) + HOOK_SCRIPT_NAME.length).replace(/^["']/, '');
+
+/**
+ * Check if ~/.claude/settings.json has our hook script configured for all
+ * three events AND that the configured script still exists. The installer
+ * writes absolute paths, so a moved checkout leaves hooks that match by name
+ * but fail on every event — those must not count as configured.
  */
 const checkHookConfigured = async () => {
   try {
@@ -34,18 +46,23 @@ const checkHookConfigured = async () => {
     const settings = JSON.parse(content);
     const hooks = settings.hooks || {};
 
-    // Check if our hook script name appears in any hook command
-    const hasHook = (eventName) => {
+    const ourCommands = (eventName) => {
       const eventHooks = hooks[eventName];
-      if (!Array.isArray(eventHooks)) return false;
-      return eventHooks.some(entry => {
-        const innerHooks = entry.hooks || [];
-        return innerHooks.some(h => h.command && h.command.includes(HOOK_SCRIPT_NAME));
-      });
+      if (!Array.isArray(eventHooks)) return [];
+      return eventHooks
+        .flatMap(entry => entry.hooks || [])
+        .map(h => h.command)
+        .filter(c => typeof c === 'string' && c.includes(HOOK_SCRIPT_NAME));
     };
 
+    const perEvent = HOOK_EVENTS.map(ourCommands);
     // Require all three hooks for accurate state coverage
-    return hasHook('Notification') && hasHook('UserPromptSubmit') && hasHook('Stop');
+    if (perEvent.some(cmds => cmds.length === 0)) return false;
+
+    // fs.access rejects for a missing script → caught below → false
+    const scriptPaths = [...new Set(perEvent.flat().map(hookScriptPathOf))];
+    await Promise.all(scriptPaths.map(p => fs.access(p)));
+    return true;
   } catch {
     return false;
   }
