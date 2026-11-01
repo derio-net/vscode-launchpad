@@ -45,5 +45,5 @@
 ## 7. Verification
 
 - [x] 7.1 `npm run test:all` green; `npm run test:e2e` green
-- [ ] 7.2 Manual check on macOS with a real Claude Code session: starting from legacy entries the banner appears → Repair → submit a prompt → the dashboard shows `working`, then `idle` after the turn ends, with no hook error printed by Claude Code
+- [x] 7.2 Manual check on macOS with a real Claude Code session: starting from legacy entries the banner appears → Repair → submit a prompt → the dashboard shows `working`, then `idle` after the turn ends, with no hook error printed by Claude Code — verified 2026-11-01: real legacy install read `needs-repair` → Repair via API → `installed` (other hooks/settings unchanged, 0600 kept); a real Claude Code run wrote state ending `idle` with empty stderr; an interactive session showed `working` on `/api/claude-sessions`
 - [ ] 7.3 Manual check of the desktop build (`npm run tauri:build:full`) from `/Applications` with no repo on `PATH`: Enable works, and Disable restores `settings.json` to have no LaunchPad entries
