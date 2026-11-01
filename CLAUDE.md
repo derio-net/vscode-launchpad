@@ -70,6 +70,8 @@ The Express server is bundled as a standalone binary (via `pkg`) and launched by
 - `GET /api/workspaces` — list workspaces
 - `POST /api/validate-path` / `POST /api/validate-paths` — check paths exist
 - `POST /api/workspaces/delete` — delete workspace storage dirs
+- `GET /api/claude-sessions` / `POST /api/claude-sessions/kill` — Claude Code sessions (gated on hooks being installed) and killing zombies
+- `GET /api/claude-hooks` / `POST /api/claude-hooks/install` / `POST /api/claude-hooks/remove` — Claude Code hook status, install/repair, remove (`server/claudeHookInstaller.js`; POSTs require a loopback Host, an allowlisted Origin, and a JSON body)
 
 ### Tauri Commands (Rust)
 - `open_vscode(uri)` — launch VS Code with a workspace URI
@@ -94,6 +96,12 @@ Frontend tests mock all `@tauri-apps/*` modules via mappings in `package.json` �
 ## Development Methodology — OpenSpec
 
 This project uses the **OpenSpec** plugin for structured, spec-driven development. All feature work follows a defined artifact workflow.
+
+### OpenSpec, not super-fr, for specs and plans
+
+**Use OpenSpec (`/opsx:*`) for all specs, designs, and task plans in this repo.** Do not write new super-fr specs or plans (`fr-plan`, `fr-goal`, or the brainstorming → spec → plan flow under `docs/superpowers/`); the few already there are historical.
+
+super-fr is still used for **where** work happens, not **what** gets specified: `fr isolation up --branch <b>` gives each change its own worktree (the repo is fr-enabled, so edits to the base clone are blocked), and `/fr-debugging` journals bug fixes under `docs/superpowers/journals/debug/`. A bug fix that changes specified behaviour still updates the relevant `openspec/specs/` capability.
 
 ### Workflow
 

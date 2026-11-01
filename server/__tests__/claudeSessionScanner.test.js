@@ -1,11 +1,14 @@
 const path = require('path');
 const os = require('os');
 
-jest.mock('fs', () => ({ promises: { readdir: jest.fn(), readFile: jest.fn(), unlink: jest.fn(), access: jest.fn() } }));
+jest.mock('fs', () => ({ promises: { readdir: jest.fn(), readFile: jest.fn(), unlink: jest.fn() } }));
 jest.mock('child_process', () => ({ execFile: jest.fn() }));
+jest.mock('../claudeHookInstaller', () => ({ getStatus: jest.fn() }));
 
 const fs = require('fs').promises;
 const { execFile } = require('child_process');
+const installer = require('../claudeHookInstaller');
+const paths = require('../claudeHook/paths');
 const scanner = require('../claudeSessionScanner');
 
 describe('claudeSessionScanner', () => {
@@ -27,68 +30,44 @@ describe('claudeSessionScanner', () => {
   });
 
   describe('checkHookConfigured', () => {
-    const allThreeHooks = {
-      Notification: [{
-        matcher: 'permission_prompt|idle_prompt',
-        hooks: [{ type: 'command', command: '/path/to/claude-session-hook.sh' }]
-      }],
-      UserPromptSubmit: [{
-        matcher: '',
-        hooks: [{ type: 'command', command: '/path/to/claude-session-hook.sh working' }]
-      }],
-      Stop: [{
-        matcher: '',
-        hooks: [{ type: 'command', command: '/path/to/claude-session-hook.sh idle' }]
-      }],
-    };
-
-    it('returns true when all three hooks are configured', async () => {
-      fs.readFile.mockResolvedValue(JSON.stringify({ hooks: allThreeHooks }));
-      fs.access.mockResolvedValue(undefined);
-      expect(await scanner.checkHookConfigured()).toBe(true);
-      expect(fs.access).toHaveBeenCalledWith('/path/to/claude-session-hook.sh');
+    it.each([
+      ['installed', true],
+      ['needs-repair', false],
+      ['not-installed', false],
+      ['unsupported', false],
+    ])('status %s → %s', async (status, expected) => {
+      installer.getStatus.mockResolvedValue({ status });
+      expect(await scanner.checkHookConfigured()).toBe(expected);
     });
 
-    it('returns false when the hook commands point at a missing script (moved checkout)', async () => {
-      fs.readFile.mockResolvedValue(JSON.stringify({ hooks: allThreeHooks }));
-      fs.access.mockRejectedValue(new Error('ENOENT'));
+    it('returns false when the installer throws', async () => {
+      installer.getStatus.mockRejectedValue(new Error('EACCES'));
       expect(await scanner.checkHookConfigured()).toBe(false);
     });
+  });
 
-    it('returns false when only Notification hook configured', async () => {
-      fs.readFile.mockResolvedValue(JSON.stringify({
-        hooks: {
-          Notification: allThreeHooks.Notification,
-        }
-      }));
-      expect(await scanner.checkHookConfigured()).toBe(false);
+  describe('state files', () => {
+    it('reads state from ~/.claude/vscode-launchpad/state/<id>.json, not the temp dir', async () => {
+      fs.readFile.mockResolvedValue(JSON.stringify({ type: 'working' }));
+      await scanner.readSessionState('abc-123');
+      expect(fs.readFile).toHaveBeenCalledWith(paths.stateFilePath('abc-123'), 'utf-8');
+      expect(paths.stateFilePath('abc-123')).toBe(
+        path.join(os.homedir(), '.claude', 'vscode-launchpad', 'state', 'abc-123.json'));
     });
 
-    it('returns false when no hooks configured', async () => {
-      fs.readFile.mockResolvedValue(JSON.stringify({ statusLine: {} }));
-      expect(await scanner.checkHookConfigured()).toBe(false);
+    it('cleanup deletes state files of sessions that are gone, keeps active ones', async () => {
+      fs.readdir.mockResolvedValue(['live.json', 'dead.json', 'dead.json.tmp.42', 'README']);
+      fs.unlink.mockResolvedValue(undefined);
+      await scanner.cleanupStateFiles(new Set(['live']));
+      expect(fs.readdir).toHaveBeenCalledWith(paths.stateDir());
+      expect(fs.unlink).toHaveBeenCalledTimes(1);
+      expect(fs.unlink).toHaveBeenCalledWith(path.join(paths.stateDir(), 'dead.json'));
     });
 
-    it('returns false when settings file missing', async () => {
-      fs.readFile.mockRejectedValue(new Error('ENOENT'));
-      expect(await scanner.checkHookConfigured()).toBe(false);
-    });
-
-    it('returns false when hook script name not found', async () => {
-      fs.readFile.mockResolvedValue(JSON.stringify({
-        hooks: {
-          Notification: [{
-            hooks: [{ type: 'command', command: 'some-other-script.sh' }]
-          }],
-          UserPromptSubmit: [{
-            hooks: [{ type: 'command', command: 'some-other-script.sh' }]
-          }],
-          Stop: [{
-            hooks: [{ type: 'command', command: 'some-other-script.sh' }]
-          }],
-        }
-      }));
-      expect(await scanner.checkHookConfigured()).toBe(false);
+    it('cleanup tolerates a missing state dir', async () => {
+      fs.readdir.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+      await expect(scanner.cleanupStateFiles(new Set())).resolves.toBeUndefined();
+      expect(fs.unlink).not.toHaveBeenCalled();
     });
   });
 

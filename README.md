@@ -117,50 +117,34 @@ Additional endpoints: `GET /health`, `POST /api/validate-path`, `POST /api/valid
 
 ## Claude Code Integration
 
-LaunchPad can show live Claude Code session status per workspace — which sessions are working, waiting for approval, idle, or orphaned (zombie). This requires configuring Claude Code hooks.
+LaunchPad can show live Claude Code session status per workspace — which sessions are working, waiting for approval, idle, or orphaned (zombie). It works through three small Claude Code hooks that LaunchPad installs for you.
 
-**Without hooks configured, the Claude integration does not appear in the UI.**
+**Until the hooks are enabled, the Claude column and summary do not appear.**
 
 ### Setup
 
-**Automatic (recommended):**
+**Desktop app:** click **Enable Claude Code status** in the dashboard header. That's it — no checkout, terminal, or `jq` needed. The same button turns into **Disable Claude Code status** once enabled.
+
+**Web / dev (from a checkout):**
 
 ```bash
-./scripts/install-claude-hooks.sh          # Install hooks
-./scripts/install-claude-hooks.sh --check  # Verify installation
-./scripts/install-claude-hooks.sh --remove # Uninstall hooks
+./scripts/install-claude-hooks.sh          # Install (or repair) hooks
+./scripts/install-claude-hooks.sh --check  # Exit 0 only if fully installed
+./scripts/install-claude-hooks.sh --remove # Remove LaunchPad hooks
 ```
 
-The script backs up your settings before modifying them, is idempotent, and only adds/removes LaunchPad hooks.
+Both use the same installer (`server/claudeHookInstaller.js`, Node only). What it does:
 
-Hooks store the script's absolute path, so **if you move or re-clone the repo, re-run `./scripts/install-claude-hooks.sh` from the new location** — it replaces hooks that point at the old checkout. `--check` (and the LaunchPad UI) treat hooks whose script no longer exists as not installed.
+- Writes the hook script to `~/.claude/vscode-launchpad/hook.sh` (a POSIX `sh` script, no dependencies). Its path doesn't depend on where LaunchPad or this repo lives, so moving or deleting a checkout no longer breaks your Claude sessions.
+- Adds one entry each for the `Notification`, `UserPromptSubmit` and `Stop` hooks in `~/.claude/settings.json`, keeping all your other settings and hooks. The previous file is saved as `settings.json.launchpad.bak` with the same permissions; `settings.json` is rewritten with 2-space indentation.
+- Records session state in `~/.claude/vscode-launchpad/state/`; files for ended sessions are cleaned up automatically.
+- On each start, LaunchPad refreshes `hook.sh` if a newer version shipped. It never adds hooks you didn't enable.
 
-**Manual:** Add the following to your `~/.claude/settings.json` (adjust the path to where you installed LaunchPad):
+**Repair:** if the hooks point at a missing or outdated script — for example an older install that referenced `scripts/claude-session-hook.sh` in a checkout — the dashboard shows a banner with a **Repair** button (or run the script above). If that checkout has since moved or been deleted, Claude Code prints a hook error on every turn until you repair. If it's still there, `scripts/claude-session-hook.sh` now forwards to the bundled hook, so nothing breaks in the meantime.
 
-```json
-{
-  "hooks": {
-    "Notification": [
-      {
-        "matcher": "permission_prompt|idle_prompt",
-        "hooks": [{ "type": "command", "command": "/path/to/vscode-launchpad/scripts/claude-session-hook.sh" }]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [{ "type": "command", "command": "/path/to/vscode-launchpad/scripts/claude-session-hook.sh working" }]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [{ "type": "command", "command": "/path/to/vscode-launchpad/scripts/claude-session-hook.sh idle" }]
-      }
-    ]
-  }
-}
-```
+**Not supported yet:** Windows, and running LaunchPad inside Docker (the container's `~/.claude` isn't the one your Claude sessions use). The control is hidden there.
+
+**Downgrading** to a version older than this feature? Click **Disable Claude Code status** first; older versions don't recognise the new hook entries.
 
 ### Session States
 
@@ -173,7 +157,7 @@ Hooks store the script's absolute path, so **if you move or re-clone the repo, r
 
 ### Troubleshooting
 
-- **"Claude integration not showing"** — Check that `~/.claude/settings.json` contains the hooks above and that the script path is correct. New Claude sessions must be started after adding hooks.
+- **"Claude integration not showing"** — Run `./scripts/install-claude-hooks.sh --check` (or look for the Enable/Repair button) to see the hook status and why. Claude sessions started before enabling must be restarted.
 - **"Sessions show wrong state"** — State updates happen on Claude Code events. If you just configured hooks, restart your Claude sessions.
 - **"Zombie sessions won't die"** — Use the Kill button in the summary panel, or manually: `kill <PID>`.
 

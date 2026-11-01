@@ -1,0 +1,108 @@
+/* Claude Code hook control (header) and repair banner. Design tokens from index.css. */
+
+.claude-hook-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.claude-hook-button {
+  padding: 6px 14px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.claude-hook-button:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.claude-hook-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.claude-hook-button--not-installed {
+  color: var(--accent);
+  border-color: var(--accent-muted);
+}
+
+.claude-hook-button--not-installed:hover:not(:disabled) {
+  background-color: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.claude-hook-button--needs-repair {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.claude-hook-button--needs-repair:hover:not(:disabled) {
+  background-color: var(--warning-muted);
+  color: var(--warning);
+}
+
+.claude-hook-error {
+  color: var(--danger);
+  font-size: 0.82rem;
+}
+
+.claude-hook-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  background-color: var(--warning-muted);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius-sm);
+}
+
+.claude-hook-banner-icon {
+  color: var(--warning);
+  font-size: 1.1rem;
+}
+
+.claude-hook-banner-text {
+  flex: 1;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.claude-hook-banner-text strong {
+  color: var(--text-primary);
+}
+
+.claude-hook-banner-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.claude-hook-banner-dismiss:hover {
+  color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+  .claude-hook-banner {
+    flex-wrap: wrap;
+  }
+  .claude-hook-banner-text {
+    flex-basis: 100%;
+  }
+}

@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const workspaceScanner = require('./workspaceScanner');
 const claudeSessionScanner = require('./claudeSessionScanner');
+const claudeHookInstaller = require('./claudeHookInstaller');
+const { createClaudeHookRouter } = require('./claudeHookRoutes');
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || 3010;
@@ -20,18 +22,18 @@ const log = {
 // Middleware
 app.use(express.json());
 
+// Origins allowed to call the API: Tauri webview and configured ports
+const allowedOrigins = [
+  `http://localhost:${PORT}`,
+  `http://127.0.0.1:${PORT}`,
+  `http://localhost:${DEV_PORT}`,
+  `http://127.0.0.1:${DEV_PORT}`,
+  'tauri://localhost',
+  'https://tauri.localhost'
+];
+
 // CORS configuration for Tauri webview and development
 app.use((req, res, next) => {
-  // Allow requests from Tauri webview and configured ports
-  const allowedOrigins = [
-    `http://localhost:${PORT}`,
-    `http://127.0.0.1:${PORT}`,
-    `http://localhost:${DEV_PORT}`,
-    `http://127.0.0.1:${DEV_PORT}`,
-    'tauri://localhost',
-    'https://tauri.localhost'
-  ];
-  
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
@@ -142,6 +144,14 @@ app.post('/api/claude-sessions/kill', async (req, res) => {
   }
 });
 
+// Claude Code hook management (enable / repair / disable)
+app.use('/api/claude-hooks', createClaudeHookRouter({
+  installer: claudeHookInstaller,
+  onChange: () => claudeSessionScanner.refreshSessions(),
+  log,
+  allowedOrigins,
+}));
+
 // Delete workspaces
 app.post('/api/workspaces/delete', async (req, res) => {
   console.log('[Server] Delete endpoint called');
@@ -187,8 +197,14 @@ app.get('*', (req, res) => {
 });
 
 // Initialize scanners and start server
+// Keep an enabled hook script in sync with this version (never edits settings.json)
+const refreshClaudeHookScript = () => claudeHookInstaller.refreshScript()
+  .then((written) => { if (written) log.info('Updated Claude Code hook script to the bundled version'); })
+  .catch((error) => log.warn('Could not refresh Claude Code hook script:', error.message));
+
 Promise.all([
   workspaceScanner.initialize(),
+  refreshClaudeHookScript(),
   claudeSessionScanner.initialize(),
 ]).then(() => {
   app.listen(PORT, HOST, () => {
@@ -203,6 +219,9 @@ Promise.all([
     console.log(`   - POST /api/validate-paths`);
     console.log(`   - GET  /api/claude-sessions`);
     console.log(`   - POST /api/claude-sessions/kill`);
+    console.log(`   - GET  /api/claude-hooks`);
+    console.log(`   - POST /api/claude-hooks/install`);
+    console.log(`   - POST /api/claude-hooks/remove`);
     console.log(`   - POST /api/workspaces/delete`);
     console.log('========================================');
     console.log('🔒 Server is only accessible from localhost for security');

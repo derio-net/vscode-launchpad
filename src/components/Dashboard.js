@@ -2,8 +2,11 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import WorkspaceTable from './WorkspaceTable';
 import SearchFilter from './SearchFilter';
 import ClaudeSessionSummary from './ClaudeSessionSummary';
+import ClaudeHookControl from './ClaudeHookControl';
+import ClaudeHookRepairBanner from './ClaudeHookRepairBanner';
 import { validatePaths, deleteWorkspaces } from '../api/client';
 import { useClaudeSessions, getAggregateState } from '../hooks/useClaudeSessions';
+import { useClaudeHookStatus } from '../hooks/useClaudeHookStatus';
 import { useClaudeNotifications } from '../hooks/useClaudeNotifications';
 import { ask } from '@tauri-apps/plugin-dialog';
 import { extractConnectionInfo, extractWorkspacePath } from '../utils/workspaceUtils';
@@ -32,8 +35,13 @@ function Dashboard({ workspaces, onRefresh }) {
   const [notification, setNotification] = useState(null);
 
   // Claude session monitoring (gated on hook configuration)
-  const { sessionMap, summary: claudeSummary, transitions, zombies, hookConfigured } = useClaudeSessions(workspaces);
+  const {
+    sessionMap, summary: claudeSummary, transitions, zombies, hookConfigured, refresh: refreshClaudeSessions,
+  } = useClaudeSessions(workspaces);
   useClaudeNotifications(transitions, sessionMap, workspaces);
+
+  // Claude Code hook enable / repair / disable (not gated: it is how the feature gets turned on)
+  const claudeHooks = useClaudeHookStatus({ onChange: refreshClaudeSessions });
 
   // Filter and sort workspaces
   const filteredAndSortedWorkspaces = useMemo(() => {
@@ -299,7 +307,20 @@ function Dashboard({ workspaces, onRefresh }) {
             <span className="info-note">Note: VS Code must be installed and your browser may show a security prompt the first time.</span>
           </p>
         </div>
+        <ClaudeHookControl
+          hookStatus={claudeHooks.hookStatus}
+          busy={claudeHooks.busy}
+          error={claudeHooks.error}
+          onInstall={claudeHooks.install}
+          onRemove={claudeHooks.remove}
+        />
       </header>
+
+      <ClaudeHookRepairBanner
+        hookStatus={claudeHooks.hookStatus}
+        busy={claudeHooks.busy}
+        onRepair={claudeHooks.install}
+      />
 
       {notification && (
         <div className={`notification notification-${notification.type}`}>

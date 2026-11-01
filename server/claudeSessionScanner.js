@@ -4,19 +4,19 @@ const os = require('os');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 
+const claudeHookInstaller = require('./claudeHookInstaller');
+const { stateDir, stateFilePath, settingsPath } = require('./claudeHook/paths');
+
 const execFileAsync = promisify(execFile);
 
 let sessionsCache = { hookConfigured: false, sessions: [] };
 
 const SCAN_INTERVAL = parseInt(process.env.CLAUDE_SCAN_INTERVAL, 10) || 5000;
-const STATE_DIR = os.tmpdir();
-const HOOK_SCRIPT_NAME = 'claude-session-hook.sh';
 
 // ─── Helpers ───
 
 const getSessionsPath = () => path.join(os.homedir(), '.claude', 'sessions');
-const getSettingsPath = () => path.join(os.homedir(), '.claude', 'settings.json');
-const stateFilePath = (sessionId) => path.join(STATE_DIR, `claude-session-state-${sessionId}.json`);
+const getSettingsPath = () => settingsPath();
 
 const isProcessAlive = (pid) => {
   try { process.kill(pid, 0); return true; } catch { return false; }
@@ -24,45 +24,15 @@ const isProcessAlive = (pid) => {
 
 // ─── Hook Configuration Check ───
 
-const HOOK_EVENTS = ['Notification', 'UserPromptSubmit', 'Stop'];
-
 /**
- * The script path inside a hook command: everything up to and including the
- * script name, so trailing args (" working", " idle") are dropped and paths
- * containing spaces survive.
- */
-const hookScriptPathOf = (command) =>
-  command.slice(0, command.indexOf(HOOK_SCRIPT_NAME) + HOOK_SCRIPT_NAME.length).replace(/^["']/, '');
-
-/**
- * Check if ~/.claude/settings.json has our hook script configured for all
- * three events AND that the configured script still exists. The installer
- * writes absolute paths, so a moved checkout leaves hooks that match by name
- * but fail on every event — those must not count as configured.
+ * The feature is on only when LaunchPad's hook is fully installed: all three
+ * events hooked with the current script, and the script present on disk
+ * (claude-hook-installer status `installed`). A broken install counts as off;
+ * the UI offers Repair instead.
  */
 const checkHookConfigured = async () => {
   try {
-    const content = await fs.readFile(getSettingsPath(), 'utf-8');
-    const settings = JSON.parse(content);
-    const hooks = settings.hooks || {};
-
-    const ourCommands = (eventName) => {
-      const eventHooks = hooks[eventName];
-      if (!Array.isArray(eventHooks)) return [];
-      return eventHooks
-        .flatMap(entry => entry.hooks || [])
-        .map(h => h.command)
-        .filter(c => typeof c === 'string' && c.includes(HOOK_SCRIPT_NAME));
-    };
-
-    const perEvent = HOOK_EVENTS.map(ourCommands);
-    // Require all three hooks for accurate state coverage
-    if (perEvent.some(cmds => cmds.length === 0)) return false;
-
-    // fs.access rejects for a missing script → caught below → false
-    const scriptPaths = [...new Set(perEvent.flat().map(hookScriptPathOf))];
-    await Promise.all(scriptPaths.map(p => fs.access(p)));
-    return true;
+    return (await claudeHookInstaller.getStatus()).status === 'installed';
   } catch {
     return false;
   }
@@ -71,7 +41,7 @@ const checkHookConfigured = async () => {
 // ─── Hook State File Reading ───
 
 /**
- * Read session state from /tmp/claude-session-state-<sessionId>.json
+ * Read session state from ~/.claude/vscode-launchpad/state/<sessionId>.json
  * Returns the state type string or 'idle' as default.
  */
 const readSessionState = async (sessionId) => {
@@ -230,16 +200,19 @@ const scanSessions = async (hookConfigured) => {
  * Remove state files for sessions that no longer exist.
  */
 const cleanupStateFiles = async (activeSessionIds) => {
+  let files;
   try {
-    const tmpFiles = await fs.readdir(STATE_DIR);
-    const stateFiles = tmpFiles.filter(f => f.startsWith('claude-session-state-') && f.endsWith('.json'));
-    for (const file of stateFiles) {
-      const sessionId = file.replace('claude-session-state-', '').replace('.json', '');
-      if (!activeSessionIds.has(sessionId)) {
-        try { await fs.unlink(path.join(STATE_DIR, file)); } catch { /* ignore */ }
-      }
+    files = await fs.readdir(stateDir());
+  } catch {
+    return; // no state dir yet (hook never ran) — nothing to clean
+  }
+  for (const file of files) {
+    if (!file.endsWith('.json')) continue; // skips in-flight `<id>.json.tmp.<pid>` writes
+    const sessionId = file.slice(0, -'.json'.length);
+    if (!activeSessionIds.has(sessionId)) {
+      try { await fs.unlink(path.join(stateDir(), file)); } catch { /* ignore */ }
     }
-  } catch { /* /tmp not readable — ignore */ }
+  }
 };
 
 // ─── Kill ───
@@ -303,5 +276,5 @@ module.exports = {
   readSessionState,
   isZombie,
   stateFilePath,
-  HOOK_SCRIPT_NAME,
+  cleanupStateFiles,
 };
