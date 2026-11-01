@@ -20,3 +20,8 @@ install-claude-hooks.sh:107 skips install when any Notification command *contain
 ### 6ecbbdc36a2e · finding [fixed] · Installer, --check and scanner now verify the hook script path, not just its name
 
 Failing tests first: server/__tests__/installClaudeHooks.test.js (runs the real installer against a throwaway HOME with stale /old/checkout hooks: --check must fail naming the path; install must replace stale paths, keep an unrelated user Stop hook, and stay idempotent) and a claudeSessionScanner case (fs.access rejects → not configured). 4 failed before the fix, 0 after; full suite 111 + 69 green; installer smoke-tested on macOS /bin/bash 3.2.
+
+<!-- fr:journal kind=review scope=debug id=e7e33263d10a created=2026-11-01T10:16:45+00:00 -->
+### e7e33263d10a · review · Self-review: no blocking findings
+
+Reviewed PR #7 diff. Checked: bash 3.2 compat (param expansion, process substitution) — verified on host; quoted/space-containing paths in scanner (leading quote stripped); partial installs (current path but an event missing) re-add all three; a current install with a custom matcher is left untouched — only stale entries get reset to default matchers (accepted). Note for operator: run the installer from the base clone, not the fr worktree, or hooks will point at a path gc later reaps.
