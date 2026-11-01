@@ -110,13 +110,31 @@ const withOurHooks = (settings, home) => {
   return next;
 };
 
-/** Back up the current file, then write atomically (temp file in the same dir + rename). */
+/**
+ * Create `target` fresh with `mode`: unlink any existing file first, then open
+ * exclusively ('wx') so a planted symlink is never followed.
+ */
+const writeExclusive = async (target, data, mode) => {
+  await fsp.rm(target, { force: true });
+  await fsp.writeFile(target, data, { mode, flag: 'wx' });
+  await fsp.chmod(target, mode); // writeFile's mode is filtered by the umask
+};
+
+/**
+ * Back up the current file, then write atomically (temp file in the same dir +
+ * rename). settings.json can hold secrets (e.g. `env` API keys), so the temp
+ * file and the backup keep the original's permissions (0600 for a new file).
+ */
 const writeSettings = async (home, settings, previousRaw) => {
   const file = settingsPath(home);
   await fsp.mkdir(path.dirname(file), { recursive: true });
-  if (previousRaw !== undefined) await fsp.writeFile(`${file}.launchpad.bak`, previousRaw);
+  let mode = 0o600;
+  try {
+    mode = (await fsp.stat(file)).mode & 0o777;
+  } catch { /* new file */ }
+  if (previousRaw !== undefined) await writeExclusive(`${file}.launchpad.bak`, previousRaw, mode);
   const tmp = `${file}.launchpad.tmp.${process.pid}`;
-  await fsp.writeFile(tmp, `${JSON.stringify(settings, null, 2)}\n`);
+  await writeExclusive(tmp, `${JSON.stringify(settings, null, 2)}\n`, mode);
   await fsp.rename(tmp, file);
 };
 

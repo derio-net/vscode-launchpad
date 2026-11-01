@@ -57,7 +57,7 @@ It exports `getStatus()`, `install()`, `remove()` and `refreshScript()`, and has
 The scanner's `hookConfigured` becomes `status === 'installed'`. A `needs-repair` install is not "configured": the feature stays hidden and the repair banner shows instead.
 
 ### D7. Safe edits to `settings.json`
-Read → parse (if invalid JSON, **refuse** and report rather than overwrite) → copy to `settings.json.launchpad.bak` → modify → write a temp file in the same directory → `rename`. Only `hooks.Notification` / `UserPromptSubmit` / `Stop` are touched; empty arrays and an empty `hooks` object are removed on uninstall. The output is formatted with 2-space indentation, which matches what Claude Code writes.
+Read → parse (if invalid JSON, **refuse** and report rather than overwrite) → copy to `settings.json.launchpad.bak` → modify → write a temp file in the same directory → `rename`. `settings.json` can hold secrets (`env` API keys), so the backup and temp file are created with the original file's mode (`0600` for a new file), exclusively (`wx`, after unlinking any stale file) so a planted symlink is never followed. Only `hooks.Notification` / `UserPromptSubmit` / `Stop` are touched; empty arrays and an empty `hooks` object are removed on uninstall. The output is formatted with 2-space indentation, which matches what Claude Code writes.
 
 ### D8. Script refresh on startup
 When the server starts with status `installed` or `needs-repair` and the on-disk `hook.sh` hash differs from the embedded one, it rewrites `hook.sh`. It never touches `settings.json` on startup. App updates therefore carry hook fixes, while enabling stays opt-in.
@@ -67,7 +67,12 @@ When the server starts with status `installed` or `needs-repair` and the on-disk
 - `POST /api/claude-hooks/install` → `{ status }` after install (also used for repair).
 - `POST /api/claude-hooks/remove` → `{ status }`.
 
-Both POSTs return `415` unless `Content-Type` is `application/json`. Cross-origin requests with that type require a CORS preflight, and the existing allowlist rejects unknown origins, so a random web page cannot change the user's Claude config through `localhost:3010`. Both return `409` with the reason when status is `unsupported`.
+Both POSTs are guarded three ways, so a random web page cannot change the user's Claude config through `localhost:3010`:
+- `403` unless the `Host` header is a loopback name (`localhost`, `127.0.0.1`, `[::1]`, `tauri.localhost`). This defeats **DNS rebinding**, where an attacker's hostname resolves to 127.0.0.1 and its requests become same-origin, so no CORS preflight ever happens.
+- `403` if an `Origin` header is present and not on the CORS allowlist.
+- `415` unless `Content-Type` is `application/json`, which forces a preflight for any cross-origin caller.
+
+Both return `409` with the reason when status is `unsupported`, and `422` when `settings.json` is invalid. The existing `/api/workspaces/delete` and `/api/claude-sessions/kill` endpoints lack the Host/Origin guard; that is tracked as a follow-up, out of scope here.
 
 ### D10. UI
 - The dashboard header gets a **Claude Code status** control (button + small menu): *Enable* when `not-installed`, *Repair* when `needs-repair`, *Disable* when `installed`. It is hidden when `unsupported`.

@@ -25,7 +25,33 @@ describe('Spec: Hook management API', () => {
     onChange = jest.fn();
     app = express();
     app.use(express.json());
-    app.use('/api/claude-hooks', createClaudeHookRouter({ installer, onChange, log: { error: jest.fn() } }));
+    app.use('/api/claude-hooks', createClaudeHookRouter({
+      installer, onChange, log: { error: jest.fn() }, allowedOrigins: ['tauri://localhost'],
+    }));
+  });
+
+  describe('request guard (DNS rebinding / cross-site)', () => {
+    it.each(['install', 'remove'])('POST /%s refuses a non-loopback Host with 403', async (action) => {
+      const res = await request(app).post(`/api/claude-hooks/${action}`).set('Host', 'evil.example:3010').send({});
+      expect(res.status).toBe(403);
+      expect(installer[action]).not.toHaveBeenCalled();
+    });
+
+    it('POST refuses an Origin outside the allowlist with 403', async () => {
+      const res = await request(app).post('/api/claude-hooks/install').set('Origin', 'http://evil.example').send({});
+      expect(res.status).toBe(403);
+      expect(installer.install).not.toHaveBeenCalled();
+    });
+
+    it.each(['localhost:3010', '127.0.0.1:3010', '[::1]:3010', 'tauri.localhost'])('POST accepts Host %s', async (host) => {
+      const res = await request(app).post('/api/claude-hooks/install').set('Host', host).send({});
+      expect(res.status).toBe(200);
+    });
+
+    it('POST accepts an allowlisted Origin', async () => {
+      const res = await request(app).post('/api/claude-hooks/install').set('Origin', 'tauri://localhost').send({});
+      expect(res.status).toBe(200);
+    });
   });
 
   it('GET returns status, scriptPath, legacy and per-event booleans', async () => {

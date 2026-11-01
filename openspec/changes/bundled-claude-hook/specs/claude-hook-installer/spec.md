@@ -85,6 +85,7 @@ The system SHALL install the hooks by removing every existing LaunchPad entry (c
 - **WHEN** install or remove changes `settings.json`
 - **THEN** the previous content SHALL first be copied to `~/.claude/settings.json.launchpad.bak`
 - **AND** the new content SHALL be written atomically (temp file + rename)
+- **AND** the backup and the new file SHALL keep the original file's permissions (`0600` for a new file), and SHALL NOT follow a symlink at the backup or temp path
 
 #### Scenario: Invalid settings file
 - **WHEN** `settings.json` exists but is not valid JSON
@@ -127,6 +128,14 @@ The system SHALL expose hook status and management over REST.
 #### Scenario: Non-JSON request refused
 - **WHEN** a POST to either endpoint has a `Content-Type` other than `application/json`
 - **THEN** the server SHALL respond `415` and SHALL NOT modify any file
+
+#### Scenario: Non-loopback Host refused (DNS rebinding)
+- **WHEN** a POST to either endpoint has a `Host` header other than `localhost`, `127.0.0.1`, `[::1]` or `tauri.localhost` (any port)
+- **THEN** the server SHALL respond `403` and SHALL NOT modify any file
+
+#### Scenario: Untrusted Origin refused
+- **WHEN** a POST to either endpoint carries an `Origin` header that is not in the server's CORS allowlist
+- **THEN** the server SHALL respond `403` and SHALL NOT modify any file
 
 #### Scenario: Unsupported environment
 - **WHEN** a POST to either endpoint is made while status is `unsupported`

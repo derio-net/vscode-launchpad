@@ -22,18 +22,18 @@ const log = {
 // Middleware
 app.use(express.json());
 
+// Origins allowed to call the API: Tauri webview and configured ports
+const allowedOrigins = [
+  `http://localhost:${PORT}`,
+  `http://127.0.0.1:${PORT}`,
+  `http://localhost:${DEV_PORT}`,
+  `http://127.0.0.1:${DEV_PORT}`,
+  'tauri://localhost',
+  'https://tauri.localhost'
+];
+
 // CORS configuration for Tauri webview and development
 app.use((req, res, next) => {
-  // Allow requests from Tauri webview and configured ports
-  const allowedOrigins = [
-    `http://localhost:${PORT}`,
-    `http://127.0.0.1:${PORT}`,
-    `http://localhost:${DEV_PORT}`,
-    `http://127.0.0.1:${DEV_PORT}`,
-    'tauri://localhost',
-    'https://tauri.localhost'
-  ];
-  
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
@@ -149,6 +149,7 @@ app.use('/api/claude-hooks', createClaudeHookRouter({
   installer: claudeHookInstaller,
   onChange: () => claudeSessionScanner.refreshSessions(),
   log,
+  allowedOrigins,
 }));
 
 // Delete workspaces

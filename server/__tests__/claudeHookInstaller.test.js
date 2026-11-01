@@ -164,6 +164,29 @@ describe('claudeHookInstaller', () => {
       expect(fs.readFileSync(`${settingsPath(home)}.launchpad.bak`, 'utf-8')).toBe(original);
     });
 
+    it('keeps settings.json permissions on the new file and the backup (may hold secrets)', async () => {
+      writeSettings({ env: { ANTHROPIC_API_KEY: 'secret' } });
+      fs.chmodSync(settingsPath(home), 0o600);
+      await installer.install(opts);
+      expect(fs.statSync(settingsPath(home)).mode & 0o777).toBe(0o600);
+      expect(fs.statSync(`${settingsPath(home)}.launchpad.bak`).mode & 0o777).toBe(0o600);
+    });
+
+    it('creates a new settings.json as 0600', async () => {
+      await installer.install(opts);
+      expect(fs.statSync(settingsPath(home)).mode & 0o777).toBe(0o600);
+    });
+
+    it('does not follow a symlink planted at the backup path', async () => {
+      writeSettings({ hooks: {} });
+      const victim = path.join(home, 'victim.txt');
+      fs.writeFileSync(victim, 'untouched');
+      fs.symlinkSync(victim, `${settingsPath(home)}.launchpad.bak`);
+      await installer.install(opts);
+      expect(fs.readFileSync(victim, 'utf-8')).toBe('untouched');
+      expect(fs.lstatSync(`${settingsPath(home)}.launchpad.bak`).isSymbolicLink()).toBe(false);
+    });
+
     it('refuses invalid JSON and leaves the file untouched', async () => {
       writeSettings('{ not json');
       await expect(installer.install(opts)).rejects.toThrow(/not valid JSON/);
