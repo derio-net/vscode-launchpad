@@ -38,7 +38,7 @@
 ## 6. CLI script, docs, cleanup
 
 - [x] 6.1 Rewrite `scripts/install-claude-hooks.sh` as a thin wrapper: `--check`→`status`, `--remove`→`remove`, default→`install`, running `node "$REPO/server/claudeHookInstaller.js"`; remove the `jq` requirement; port PR #7's `installClaudeHooks.test.js` cases to the wrapper
-- [x] 6.2 Delete `scripts/claude-session-hook.sh`, and update `server/__tests__/docs-references.test.js` exceptions if it references the file
+- [x] 6.2 Replace `scripts/claude-session-hook.sh` with a compatibility shim that forwards to `~/.claude/vscode-launchpad/hook.sh` when installed and otherwise exits 0 silently (legacy installs point at it; deleting it would bring back the per-turn hook error), with tests
 - [x] 6.3 Update README "Claude Code session status": desktop → click **Enable Claude Code status**; web/dev → `./scripts/install-claude-hooks.sh`; note the state/script location, the `settings.json.launchpad.bak` backup, Windows/Docker unsupported, and "Disable before downgrading"
 - [x] 6.4 Update `CLAUDE.md` Express API endpoints list with `/api/claude-hooks*`
 

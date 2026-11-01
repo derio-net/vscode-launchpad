@@ -32,7 +32,7 @@ Separately, on macOS the hook writes state to `/tmp`, but the scanner reads `os.
 
 - **Server:** new `server/claudeHookInstaller.js` and embedded hook script module; `server/claudeSessionScanner.js` (state dir, gate); `server/index.js` (3 routes, startup refresh).
 - **Frontend:** `src/api/client.js` (3 calls), `src/hooks/useClaudeSessions.js`, `src/components/Dashboard.js`, plus a new enable/repair control and banner.
-- **Scripts:** `scripts/install-claude-hooks.sh` (wrapper); `scripts/claude-session-hook.sh` is removed, its content now living in the server module.
+- **Scripts:** `scripts/install-claude-hooks.sh` (wrapper); `scripts/claude-session-hook.sh` becomes a compatibility shim that forwards to the bundled hook (legacy installs point at it).
 - **Docs:** README setup section becomes "click Enable in the app"; the script remains for web/Docker.
 - **User machine:** writes `~/.claude/vscode-launchpad/` and edits `~/.claude/settings.json`, only on explicit user action.
 - **Security:** the new POST endpoints change user config. They are bound to the existing CORS allowlist and require `Content-Type: application/json`, so cross-site simple requests can't trigger them.

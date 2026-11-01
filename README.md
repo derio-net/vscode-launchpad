@@ -140,7 +140,7 @@ Both use the same installer (`server/claudeHookInstaller.js`, Node only). What i
 - Records session state in `~/.claude/vscode-launchpad/state/`; files for ended sessions are cleaned up automatically.
 - On each start, LaunchPad refreshes `hook.sh` if a newer version shipped. It never adds hooks you didn't enable.
 
-**Repair:** if the hooks point at a missing or outdated script — for example an older install that referenced `scripts/claude-session-hook.sh` in a checkout — the dashboard shows a banner with a **Repair** button (or run the script above). Until repaired, Claude Code prints a hook error on every turn.
+**Repair:** if the hooks point at a missing or outdated script — for example an older install that referenced `scripts/claude-session-hook.sh` in a checkout — the dashboard shows a banner with a **Repair** button (or run the script above). If that checkout has since moved or been deleted, Claude Code prints a hook error on every turn until you repair. If it's still there, `scripts/claude-session-hook.sh` now forwards to the bundled hook, so nothing breaks in the meantime.
 
 **Not supported yet:** Windows, and running LaunchPad inside Docker (the container's `~/.claude` isn't the one your Claude sessions use). The control is hidden there.
 

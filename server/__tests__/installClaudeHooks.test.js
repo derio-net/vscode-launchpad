@@ -77,3 +77,30 @@ describe('install-claude-hooks.sh', () => {
     expect(run('--bogus').status).toBe(2);
   });
 });
+
+describe('scripts/claude-session-hook.sh (legacy shim)', () => {
+  const SHIM = path.join(__dirname, '..', '..', 'scripts', 'claude-session-hook.sh');
+  let home;
+  const run = (...args) => spawnSync('/bin/sh', [SHIM, ...args], {
+    input: JSON.stringify({ session_id: 'legacy-1' }),
+    env: { HOME: home, PATH: '/usr/bin:/bin' },
+    encoding: 'utf-8',
+  });
+
+  beforeEach(() => { home = fs.mkdtempSync(path.join(os.tmpdir(), 'legacy-shim-')); });
+  afterEach(() => fs.rmSync(home, { recursive: true, force: true }));
+
+  it('exits 0 silently when the bundled hook is not installed', () => {
+    const res = run('idle');
+    expect(res.status).toBe(0);
+    expect(res.stderr).toBe('');
+  });
+
+  it('forwards to the bundled hook when installed', async () => {
+    const installer = require('../claudeHookInstaller');
+    await installer.install({ home, platform: 'darwin', exists: (p) => !['/.dockerenv', '/run/.containerenv'].includes(p) && fs.existsSync(p) });
+    expect(run('working').status).toBe(0);
+    const state = JSON.parse(fs.readFileSync(path.join(home, '.claude', 'vscode-launchpad', 'state', 'legacy-1.json'), 'utf-8'));
+    expect(state.type).toBe('working');
+  });
+});

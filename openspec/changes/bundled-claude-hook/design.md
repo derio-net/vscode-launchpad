@@ -93,8 +93,9 @@ Both return `409` with the reason when status is `unsupported`, and `422` when `
 
 1. Ship the server, UI and wrapper script together.
 2. Existing users with legacy `claude-session-hook.sh` entries see the **Repair** banner. One click replaces them with the new entries and writes `hook.sh`.
-3. Old `/tmp/claude-session-state-*.json` files are left alone (harmless, cleared on reboot).
-4. Rollback: **Disable** in the UI, or `node server/claudeHookInstaller.js remove`, or restore `settings.json.launchpad.bak`. An older app version's installer still recognises entries by `claude-session-hook.sh` only, so after a downgrade users should run Disable before downgrading. This goes in the release notes.
+3. `scripts/claude-session-hook.sh` stays as a **compatibility shim**, because legacy entries point at it. Deleting it would make every Claude turn print `No such file or directory` for checkout users the moment they pull, which is the bug this change exists to remove. The shim forwards to `~/.claude/vscode-launchpad/hook.sh` when installed and otherwise exits 0 silently. Such installs are still `needs-repair`, so the banner keeps offering Repair. The shim can be deleted a few releases later.
+4. Old `/tmp/claude-session-state-*.json` files are left alone (harmless, cleared on reboot).
+5. Rollback: **Disable** in the UI, or `node server/claudeHookInstaller.js remove`, or restore `settings.json.launchpad.bak`. An older app version's installer still recognises entries by `claude-session-hook.sh` only, so after a downgrade users should run Disable before downgrading. This goes in the release notes.
 
 ## Open Questions
 
