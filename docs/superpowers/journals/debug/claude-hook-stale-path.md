@@ -15,3 +15,8 @@ Repo .claude/settings.json and settings.local.json contain no hook paths; the st
 ### 52488933d084 · root-cause · Hook installer and scanner detect hooks by script name, not by a resolvable path
 
 install-claude-hooks.sh:107 skips install when any Notification command *contains* 'claude-session-hook.sh' — so after the checkout moved, re-running the installer says 'already installed' and leaves the dead absolute path. --check (line 53) and server/claudeSessionScanner.js checkHookConfigured (line 43) use the same name-only match, so both report healthy hooks pointing at a missing file. Absolute paths are inherent (hooks run from arbitrary cwd); the defect is that a moved checkout cannot self-heal and nothing reports it.
+
+<!-- fr:journal kind=finding scope=debug id=6ecbbdc36a2e created=2026-11-01T10:16:13+00:00 state=fixed -->
+### 6ecbbdc36a2e · finding [fixed] · Installer, --check and scanner now verify the hook script path, not just its name
+
+Failing tests first: server/__tests__/installClaudeHooks.test.js (runs the real installer against a throwaway HOME with stale /old/checkout hooks: --check must fail naming the path; install must replace stale paths, keep an unrelated user Stop hook, and stay idempotent) and a claudeSessionScanner case (fs.access rejects → not configured). 4 failed before the fix, 0 after; full suite 111 + 69 green; installer smoke-tested on macOS /bin/bash 3.2.
