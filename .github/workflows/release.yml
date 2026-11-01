@@ -18,7 +18,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -61,10 +61,10 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 18
           cache: 'npm'
@@ -266,18 +266,48 @@ jobs:
           }
           echo "$PLATFORM artifacts uploaded"
 
-  # Update release notes (GitHub auto-generated, grouped by PR label)
+  # Fill in the draft's release notes (GitHub auto-generated).
+  #
+  # Uses the REST API by release id on purpose:
+  # - draft releases are invisible to /releases/tags/<tag>, so `gh release edit <tag>`
+  #   cannot find them; we look the id up in the /releases listing instead
+  # - softprops/action-gh-release@v1 silently failed to apply notes to drafts and
+  #   rewrote tag_name to `untagged-*`, which created a junk tag on publish (v0.2.0)
   update-release:
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Update release with auto-generated notes
-        uses: softprops/action-gh-release@v1
-        with:
-          generate_release_notes: true
-          draft: true
-          prerelease: ${{ contains(github.ref_name, 'beta') }}
+      - name: Update draft release with auto-generated notes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          id=$(gh api --paginate "repos/$REPO/releases?per_page=100" \
+            --jq ".[] | select(.tag_name == \"$TAG\") | .id" | head -n 1)
+          if [ -z "$id" ]; then
+            echo "::error::No release found for tag $TAG"
+            exit 1
+          fi
+
+          notes=$(gh api -X POST "repos/$REPO/releases/generate-notes" -f tag_name="$TAG" --jq .body)
+
+          prerelease=false
+          case "$TAG" in *beta*) prerelease=true ;; esac
+
+          gh api -X PATCH "repos/$REPO/releases/$id" \
+            -f tag_name="$TAG" \
+            -f body="$notes" \
+            -F draft=true \
+            -F prerelease="$prerelease" \
+            --jq '"Release \(.id): tag=\(.tag_name) draft=\(.draft) prerelease=\(.prerelease) notes=\(.body | length) chars"'
+
+          # Guard against the old failure mode: the tag must still be intact
+          actual=$(gh api "repos/$REPO/releases/$id" --jq .tag_name)
+          if [ "$actual" != "$TAG" ]; then
+            echo "::error::Release tag_name is '$actual', expected '$TAG'"
+            exit 1
+          fi
