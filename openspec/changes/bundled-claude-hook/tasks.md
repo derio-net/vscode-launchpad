@@ -37,10 +37,10 @@
 
 ## 6. CLI script, docs, cleanup
 
-- [ ] 6.1 Rewrite `scripts/install-claude-hooks.sh` as a thin wrapper: `--check`→`status`, `--remove`→`remove`, default→`install`, running `node "$REPO/server/claudeHookInstaller.js"`; remove the `jq` requirement; port PR #7's `installClaudeHooks.test.js` cases to the wrapper
-- [ ] 6.2 Delete `scripts/claude-session-hook.sh`, and update `server/__tests__/docs-references.test.js` exceptions if it references the file
-- [ ] 6.3 Update README "Claude Code session status": desktop → click **Enable Claude Code status**; web/dev → `./scripts/install-claude-hooks.sh`; note the state/script location, the `settings.json.launchpad.bak` backup, Windows/Docker unsupported, and "Disable before downgrading"
-- [ ] 6.4 Update `CLAUDE.md` Express API endpoints list with `/api/claude-hooks*`
+- [x] 6.1 Rewrite `scripts/install-claude-hooks.sh` as a thin wrapper: `--check`→`status`, `--remove`→`remove`, default→`install`, running `node "$REPO/server/claudeHookInstaller.js"`; remove the `jq` requirement; port PR #7's `installClaudeHooks.test.js` cases to the wrapper
+- [x] 6.2 Delete `scripts/claude-session-hook.sh`, and update `server/__tests__/docs-references.test.js` exceptions if it references the file
+- [x] 6.3 Update README "Claude Code session status": desktop → click **Enable Claude Code status**; web/dev → `./scripts/install-claude-hooks.sh`; note the state/script location, the `settings.json.launchpad.bak` backup, Windows/Docker unsupported, and "Disable before downgrading"
+- [x] 6.4 Update `CLAUDE.md` Express API endpoints list with `/api/claude-hooks*`
 
 ## 7. Verification
 

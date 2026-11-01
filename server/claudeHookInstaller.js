@@ -40,11 +40,15 @@ const resolveOpts = (opts = {}) => ({
   home: opts.home || os.homedir(),
   platform: opts.platform || process.platform,
   exists: opts.exists || fs.existsSync,
+  // For tests, or a container whose ~/.claude really is the user's (bind-mounted)
+  allowContainer: opts.allowContainer !== undefined
+    ? opts.allowContainer
+    : process.env.LAUNCHPAD_CLAUDE_HOOKS_ALLOW_CONTAINER === '1',
 });
 
-const unsupportedReason = ({ platform, exists }) => {
+const unsupportedReason = ({ platform, exists, allowContainer }) => {
   if (platform === 'win32') return 'Claude Code status is not supported on Windows yet.';
-  if (exists('/.dockerenv') || exists('/run/.containerenv')) {
+  if (!allowContainer && (exists('/.dockerenv') || exists('/run/.containerenv'))) {
     return 'Running inside a container: its ~/.claude is not the one your Claude Code sessions use.';
   }
   return null;

@@ -70,6 +70,8 @@ The Express server is bundled as a standalone binary (via `pkg`) and launched by
 - `GET /api/workspaces` — list workspaces
 - `POST /api/validate-path` / `POST /api/validate-paths` — check paths exist
 - `POST /api/workspaces/delete` — delete workspace storage dirs
+- `GET /api/claude-sessions` / `POST /api/claude-sessions/kill` — Claude Code sessions (gated on hooks being installed) and killing zombies
+- `GET /api/claude-hooks` / `POST /api/claude-hooks/install` / `POST /api/claude-hooks/remove` — Claude Code hook status, install/repair, remove (`server/claudeHookInstaller.js`; POSTs require a loopback Host, an allowlisted Origin, and a JSON body)
 
 ### Tauri Commands (Rust)
 - `open_vscode(uri)` — launch VS Code with a workspace URI

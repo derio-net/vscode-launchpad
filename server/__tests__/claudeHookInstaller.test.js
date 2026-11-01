@@ -95,9 +95,14 @@ describe('claudeHookInstaller', () => {
 
     it('is unsupported inside a container', async () => {
       const exists = (p) => p === '/.dockerenv' || opts.exists(p);
-      const s = await installer.getStatus({ ...opts, exists });
+      const s = await installer.getStatus({ ...opts, exists, allowContainer: false });
       expect(s.status).toBe('unsupported');
       expect(s.reason).toMatch(/container/);
+    });
+
+    it('allows a container when explicitly opted in', async () => {
+      const exists = (p) => p === '/.dockerenv' || opts.exists(p);
+      expect((await installer.getStatus({ ...opts, exists, allowContainer: true })).status).toBe('not-installed');
     });
   });
 
