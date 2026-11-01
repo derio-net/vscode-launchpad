@@ -17,14 +17,14 @@
 
 ## 3. API
 
-- [ ] 3.1 Write failing tests in `server/__tests__/api.test.js` (installer mocked): `GET /api/claude-hooks`; `POST /install` and `/remove` return the new status; `415` for non-JSON content type; `409` when unsupported; `500` with a message when the installer throws
-- [ ] 3.2 Add the three routes to `server/index.js` and list them in the startup log
-- [ ] 3.3 Call `refreshScript()` during server startup (next to `claudeSessionScanner.initialize()`), logging and swallowing errors
+- [x] 3.1 Write failing tests in `server/__tests__/api.test.js` (installer mocked): `GET /api/claude-hooks`; `POST /install` and `/remove` return the new status; `415` for non-JSON content type; `409` when unsupported; `500` with a message when the installer throws
+- [x] 3.2 Add the three routes to `server/index.js` and list them in the startup log
+- [x] 3.3 Call `refreshScript()` during server startup (next to `claudeSessionScanner.initialize()`), logging and swallowing errors
 
 ## 4. Session scanner
 
-- [ ] 4.1 Update `server/__tests__/claudeSessionScanner.test.js`: state read from `stateFilePath(id)`; stale cleanup scans `stateDir()` and tolerates it missing; `checkHookConfigured` returns true only when the installer status is `installed` (mock the installer)
-- [ ] 4.2 In `server/claudeSessionScanner.js` replace `STATE_DIR = os.tmpdir()` and the `claude-session-state-` prefix with `claudeHook/paths`; delegate `checkHookConfigured` to `getStatus()`; drop the now-unused `HOOK_SCRIPT_NAME` export (update its references)
+- [x] 4.1 Update `server/__tests__/claudeSessionScanner.test.js`: state read from `stateFilePath(id)`; stale cleanup scans `stateDir()` and tolerates it missing; `checkHookConfigured` returns true only when the installer status is `installed` (mock the installer)
+- [x] 4.2 In `server/claudeSessionScanner.js` replace `STATE_DIR = os.tmpdir()` and the `claude-session-state-` prefix with `claudeHook/paths`; delegate `checkHookConfigured` to `getStatus()`; drop the now-unused `HOOK_SCRIPT_NAME` export (update its references)
 
 ## 5. Frontend
 
