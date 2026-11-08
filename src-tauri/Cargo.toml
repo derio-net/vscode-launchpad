@@ -1,6 +1,6 @@
 [package]
 name = "vscode-launchpad"
-version = "0.3.0"
+version = "0.3.1"
 description = "VS Code Launchpad - Desktop Application"
 authors = ["VS Code Launchpad"]
 license = "MIT"
