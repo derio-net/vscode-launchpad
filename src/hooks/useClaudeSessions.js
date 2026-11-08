@@ -56,6 +56,57 @@ export const getAggregateState = (sessions) => {
   return 'idle';
 };
 
+const STATE_RANK = { waiting: 0, working: 1, idle: 2 };
+
+/**
+ * Live sessions that landed on no workspace row (their folder isn't in VS Code's
+ * workspace list), grouped by folder:
+ *   [{ cwd, name, state, counts: { working, waiting, idle }, sessions }]
+ * Ordered most urgent first (waiting > working > idle), then by folder name.
+ * Zombies are excluded; they have their own section.
+ */
+export const groupUnmatchedSessions = (sessions, sessionMap) => {
+  const matched = new Set();
+  for (const list of sessionMap.values()) {
+    for (const s of list) matched.add(s);
+  }
+
+  const groups = new Map();
+  for (const session of sessions) {
+    if (session.state === 'zombie' || matched.has(session)) continue;
+    const cwd = normalizePath(session.cwd);
+    if (!cwd) continue;
+    if (!groups.has(cwd)) {
+      groups.set(cwd, { cwd, name: cwd.split('/').filter(Boolean).pop() || cwd, sessions: [] });
+    }
+    groups.get(cwd).sessions.push(session);
+  }
+
+  return [...groups.values()]
+    .map(g => ({
+      ...g,
+      state: getAggregateState(g.sessions),
+      counts: {
+        working: g.sessions.filter(s => s.state === 'working').length,
+        waiting: g.sessions.filter(s => s.state === 'waiting').length,
+        idle: g.sessions.filter(s => s.state === 'idle').length,
+      },
+    }))
+    .sort((a, b) => (STATE_RANK[a.state] - STATE_RANK[b.state]) || a.name.localeCompare(b.name));
+};
+
+/**
+ * Why a working/waiting filter shows no rows, when the answer is "those sessions
+ * are in folders without a workspace row". Returns null when that isn't the cause.
+ */
+export const claudeFilterEmptyMessage = (claudeFilter, unmatched) => {
+  if (claudeFilter !== 'working' && claudeFilter !== 'waiting') return null;
+  const count = unmatched.reduce((n, g) => n + (g.counts[claudeFilter] || 0), 0);
+  if (count === 0) return null;
+  const where = count === 1 ? 'is in a folder' : 'are in folders';
+  return `No workspace rows have ${claudeFilter} sessions. ${count} ${where} VS Code doesn't list; see Other sessions above.`;
+};
+
 /**
  * Hook that polls for Claude Code sessions and maps them to workspaces.
  */
@@ -119,7 +170,12 @@ export function useClaudeSessions(workspaces) {
     };
   }, [sessions, zombies]);
 
-  return { sessions, sessionMap, summary, transitions, zombies, hookConfigured, refresh: fetchSessions };
+  const unmatched = useMemo(
+    () => groupUnmatchedSessions(sessions, sessionMap),
+    [sessions, sessionMap]
+  );
+
+  return { sessions, sessionMap, summary, transitions, zombies, unmatched, hookConfigured, refresh: fetchSessions };
 }
 
 export default useClaudeSessions;

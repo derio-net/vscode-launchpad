@@ -155,6 +155,10 @@ Both use the same installer (`server/claudeHookInstaller.js`, Node only). What i
 | **Idle** | Grey | Claude is at the prompt, nothing pending |
 | **Zombie** | Red (in summary) | Terminal disconnected, session orphaned — can be killed from the UI |
 
+### Sessions outside your workspaces
+
+A session appears on a workspace row when its folder is that workspace or sits inside it. Sessions started in folders VS Code doesn't list as workspaces (say, a repo you only ever use from the terminal) are shown in the summary panel under **Other sessions**, grouped by folder. Click **Open in VS Code** on one: VS Code opens the folder and adds it to its workspace list, and after the next refresh it has its own row with the session indicators.
+
 ### Troubleshooting
 
 - **"Claude integration not showing"** — Run `./scripts/install-claude-hooks.sh --check` (or look for the Enable/Repair button) to see the hook status and why. Claude sessions started before enabling must be restarted.

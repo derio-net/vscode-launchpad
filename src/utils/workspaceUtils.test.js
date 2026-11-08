@@ -4,7 +4,12 @@ import {
   extractConnectionInfo,
   extractSSHHost,
   extractWorkspacePath,
+  toVSCodeUri,
+  folderToVSCodeUri,
+  openVSCodeUri,
 } from './workspaceUtils';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-shell';
 
 // Sample URIs matching real VS Code workspace storage formats
 const REMOTE_ATTACHED_CONTAINER_URI =
@@ -211,5 +216,70 @@ describe('sorting compatibility', () => {
     expect(displayB).toBeTruthy();
     expect(typeof displayA).toBe('string');
     expect(typeof displayB).toBe('string');
+  });
+});
+
+
+describe('folderToVSCodeUri', () => {
+  it('builds a vscode://file URI for a plain path', () => {
+    expect(folderToVSCodeUri('/Users/dev/tools/agent')).toBe('vscode://file/Users/dev/tools/agent');
+  });
+
+  it('encodes each segment but keeps the slashes', () => {
+    expect(folderToVSCodeUri('/Users/dev/my project#2')).toBe('vscode://file/Users/dev/my%20project%232');
+  });
+
+  it('drops a trailing slash', () => {
+    expect(folderToVSCodeUri('/Users/dev/agent/')).toBe('vscode://file/Users/dev/agent');
+  });
+});
+
+describe('toVSCodeUri (moved from WorkspaceTable, unchanged behaviour)', () => {
+  it('converts a local file:// workspace', () => {
+    expect(toVSCodeUri({ type: 'local', path: 'file:///Users/dev/my%20proj' })).toBe('vscode://file/Users/dev/my%20proj');
+  });
+
+  it('converts a local path without file://', () => {
+    expect(toVSCodeUri({ type: 'local', path: '/Users/dev/proj' })).toBe('vscode://file/Users/dev/proj');
+  });
+
+  it.each(['ssh-remote', 'dev-container', 'attached-container', 'remote'])(
+    'rewrites vscode-remote:// to vscode://vscode-remote/ for %s', (type) => {
+      expect(toVSCodeUri({ type, path: 'vscode-remote://ssh-remote%2Bhost/home/u/p' }))
+        .toBe('vscode://vscode-remote/ssh-remote%2Bhost/home/u/p');
+    });
+
+  it('returns other remote paths as-is', () => {
+    expect(toVSCodeUri({ type: 'ssh-remote', path: 'file:///x' })).toBe('file:///x');
+  });
+});
+
+describe('openVSCodeUri', () => {
+  afterEach(() => {
+    delete window.__TAURI__;
+    delete window.__TAURI_INTERNALS__;
+    jest.clearAllMocks();
+  });
+
+  it('invokes open_vscode in Tauri mode', async () => {
+    window.__TAURI_INTERNALS__ = {};
+    invoke.mockResolvedValueOnce(null);
+    await openVSCodeUri('vscode://file/x');
+    expect(invoke).toHaveBeenCalledWith('open_vscode', { uri: 'vscode://file/x' });
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the shell open when invoke fails', async () => {
+    window.__TAURI__ = {};
+    invoke.mockRejectedValueOnce(new Error('nope'));
+    await openVSCodeUri('vscode://file/x');
+    expect(open).toHaveBeenCalledWith('vscode://file/x');
+  });
+
+  it('navigates to the URI in browser mode', async () => {
+    const navigate = jest.fn();
+    await openVSCodeUri('vscode://file/x', { navigate });
+    expect(navigate).toHaveBeenCalledWith('vscode://file/x');
+    expect(invoke).not.toHaveBeenCalled();
   });
 });
