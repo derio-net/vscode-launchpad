@@ -13,6 +13,10 @@ The summary panel SHALL list live Claude sessions whose working folder matches n
 - **THEN** the section SHALL show a single entry for that folder with counts "1 working" and "2 idle"
 - **AND** the entry's status indicator SHALL reflect the most urgent state (waiting > working > idle)
 
+#### Scenario: Folders with the same name
+- **WHEN** unmatched folders `/Users/dev/DERIO_NET/triage-state` and `/Users/dev/STOA/triage-state` are both listed
+- **THEN** their entries SHALL show enough parent folders to tell them apart (`DERIO_NET/triage-state`, `STOA/triage-state`)
+
 #### Scenario: Ordering
 - **WHEN** there are several unmatched folders
 - **THEN** entries SHALL be ordered by most urgent state first, then by folder name

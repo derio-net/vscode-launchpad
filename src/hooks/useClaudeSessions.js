@@ -59,9 +59,34 @@ export const getAggregateState = (sessions) => {
 const STATE_RANK = { waiting: 0, working: 1, idle: 2 };
 
 /**
+ * Shortest path suffix that tells each folder apart: the folder name, plus only
+ * as many parents as needed when names collide (`DERIO_NET/triage-state`).
+ * Returns a Map of cwd -> label.
+ */
+const uniqueFolderLabels = (cwds) => {
+  const parts = new Map(cwds.map(cwd => [cwd, cwd.split('/').filter(Boolean)]));
+  const depth = new Map(cwds.map(cwd => [cwd, 1]));
+  const label = (cwd) => parts.get(cwd).slice(-depth.get(cwd)).join('/') || cwd;
+
+  for (;;) {
+    const byLabel = new Map();
+    for (const cwd of cwds) {
+      const l = label(cwd);
+      byLabel.set(l, [...(byLabel.get(l) || []), cwd]);
+    }
+    const colliding = [...byLabel.values()].filter(list => list.length > 1).flat()
+      .filter(cwd => depth.get(cwd) < parts.get(cwd).length);
+    if (colliding.length === 0) break;
+    colliding.forEach(cwd => depth.set(cwd, depth.get(cwd) + 1));
+  }
+  return new Map(cwds.map(cwd => [cwd, label(cwd)]));
+};
+
+/**
  * Live sessions that landed on no workspace row (their folder isn't in VS Code's
  * workspace list), grouped by folder:
  *   [{ cwd, name, state, counts: { working, waiting, idle }, sessions }]
+ * `name` is the folder name, with parents added only when two folders share it.
  * Ordered most urgent first (waiting > working > idle), then by folder name.
  * Zombies are excluded; they have their own section.
  */
@@ -77,14 +102,17 @@ export const groupUnmatchedSessions = (sessions, sessionMap) => {
     const cwd = normalizePath(session.cwd);
     if (!cwd) continue;
     if (!groups.has(cwd)) {
-      groups.set(cwd, { cwd, name: cwd.split('/').filter(Boolean).pop() || cwd, sessions: [] });
+      groups.set(cwd, { cwd, sessions: [] });
     }
     groups.get(cwd).sessions.push(session);
   }
 
+  const labels = uniqueFolderLabels([...groups.keys()]);
+
   return [...groups.values()]
     .map(g => ({
       ...g,
+      name: labels.get(g.cwd),
       state: getAggregateState(g.sessions),
       counts: {
         working: g.sessions.filter(s => s.state === 'working').length,

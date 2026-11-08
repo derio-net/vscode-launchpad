@@ -159,6 +159,32 @@ describe('groupUnmatchedSessions', () => {
   });
 });
 
+describe('groupUnmatchedSessions: colliding folder names', () => {
+  const s = (sessionId, cwd, state = 'idle') => ({ sessionId, cwd, state, pid: 1 });
+
+  it('adds the parent folder when two folders share a name', () => {
+    const groups = groupUnmatchedSessions([
+      s('a', '/Users/dev/DERIO_NET/triage-state'),
+      s('b', '/Users/dev/STOA/triage-state'),
+      s('c', '/Users/dev/tools'),
+    ], new Map());
+    expect(groups.map(g => g.name)).toEqual(['DERIO_NET/triage-state', 'STOA/triage-state', 'tools']);
+  });
+
+  it('adds as many parents as it takes', () => {
+    const groups = groupUnmatchedSessions([
+      s('a', '/a/same/app'),
+      s('b', '/b/same/app'),
+    ], new Map());
+    expect(groups.map(g => g.name)).toEqual(['a/same/app', 'b/same/app']);
+  });
+
+  it('keeps the short name when nothing collides', () => {
+    const [group] = groupUnmatchedSessions([s('a', '/Users/dev/tools')], new Map());
+    expect(group.name).toBe('tools');
+  });
+});
+
 describe('claudeFilterEmptyMessage', () => {
   const g = (counts) => ({ cwd: '/x', name: 'x', state: 'idle', counts: { working: 0, waiting: 0, idle: 0, ...counts }, sessions: [] });
 

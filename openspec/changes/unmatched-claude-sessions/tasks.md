@@ -14,6 +14,7 @@
 
 - [x] 3.1 Write failing tests in `src/components/__tests__/ClaudeSessionSummary.test.js`: section shown only when `unmatched` is non-empty; entry shows folder name with full-path tooltip, counts and state dot; **Open in VS Code** calls `openVSCodeUri` with the folder URI and calls `onOpenFolder`; more than 5 folders → 5 shown plus "Show all (N)", which reveals the rest; zombies section unchanged
 - [x] 3.2 Implement the section in `src/components/ClaudeSessionSummary.js` with styles in `ClaudeSessionSummary.css` using existing design tokens (works at narrow widths)
+- [x] 3.4 Show parent folders when unmatched folder names collide (`DERIO_NET/triage-state`, `STOA/triage-state`); found in the manual check
 - [x] 3.3 In `Dashboard.js`, pass `unmatched` and `onOpenFolder` (schedules one `onRefresh()` about 10 s later, cleared on unmount) to `ClaudeSessionSummary`
 
 ## 4. Filter empty state
@@ -29,4 +30,4 @@
 ## 6. Verification
 
 - [x] 6.1 `npm run test:all` and the Chromium E2E suite green
-- [ ] 6.2 Manual check in the desktop app: a session in a folder not in the list appears under "Other sessions"; **Open in VS Code** opens it; after the refresh the folder has a row with the session indicator and leaves "Other sessions"
+- [x] 6.2 Manual check in the desktop app: a session in a folder not in the list appears under "Other sessions"; **Open in VS Code** opens it; after the refresh the folder has a row with the session indicator and leaves "Other sessions" — verified 2026-11-08 by the operator in a browser against real sessions (this branch's frontend, installed v0.3.0 API): Open in VS Code opened the folder for a working and an idle entry, each left the list, and after reloading the sessions were in the Claude column. Not repeated in the packaged desktop app
