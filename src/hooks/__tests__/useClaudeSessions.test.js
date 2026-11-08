@@ -1,4 +1,4 @@
-import { matchSessionToWorkspace, buildSessionWorkspaceMap, getAggregateState } from '../useClaudeSessions';
+import { matchSessionToWorkspace, buildSessionWorkspaceMap, getAggregateState, groupUnmatchedSessions, claudeFilterEmptyMessage } from '../useClaudeSessions';
 
 describe('matchSessionToWorkspace', () => {
   it('matches exact paths', () => {
@@ -109,5 +109,98 @@ describe('getAggregateState', () => {
 
   it('returns idle when all sessions are idle', () => {
     expect(getAggregateState([{ state: 'idle' }, { state: 'idle' }])).toBe('idle');
+  });
+});
+
+describe('groupUnmatchedSessions', () => {
+  const s = (sessionId, cwd, state) => ({ sessionId, cwd, state, pid: 1 });
+  const ws = (path) => ({ id: path, type: 'local', path: `file://${path}` });
+
+  it('returns [] when there are no sessions', () => {
+    expect(groupUnmatchedSessions([], new Map())).toEqual([]);
+  });
+
+  it('excludes sessions that matched a workspace', () => {
+    const sessions = [s('a', '/Users/dev/frank', 'idle'), s('b', '/Users/dev/tools', 'working')];
+    const map = buildSessionWorkspaceMap(sessions, [ws('/Users/dev/frank')]);
+    const groups = groupUnmatchedSessions(sessions, map);
+    expect(groups.map(g => g.cwd)).toEqual(['/Users/dev/tools']);
+  });
+
+  it('excludes zombies', () => {
+    const groups = groupUnmatchedSessions([s('z', '/Users/dev/tools', 'zombie')], new Map());
+    expect(groups).toEqual([]);
+  });
+
+  it('groups sessions by folder with per-state counts and the most urgent state', () => {
+    const sessions = [
+      s('a', '/Users/dev/super-fr', 'idle'),
+      s('b', '/Users/dev/super-fr/', 'working'), // trailing slash: same folder
+      s('c', '/Users/dev/super-fr', 'idle'),
+    ];
+    const [group] = groupUnmatchedSessions(sessions, new Map());
+    expect(group).toMatchObject({
+      cwd: '/Users/dev/super-fr',
+      name: 'super-fr',
+      state: 'working',
+      counts: { working: 1, waiting: 0, idle: 2 },
+    });
+    expect(group.sessions.map(x => x.sessionId)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('orders by urgency (waiting > working > idle), then by folder name', () => {
+    const sessions = [
+      s('1', '/x/zeta', 'idle'),
+      s('2', '/x/alpha', 'idle'),
+      s('3', '/x/mid', 'working'),
+      s('4', '/x/late', 'waiting'),
+    ];
+    expect(groupUnmatchedSessions(sessions, new Map()).map(g => g.name)).toEqual(['late', 'mid', 'alpha', 'zeta']);
+  });
+});
+
+describe('groupUnmatchedSessions: colliding folder names', () => {
+  const s = (sessionId, cwd, state = 'idle') => ({ sessionId, cwd, state, pid: 1 });
+
+  it('adds the parent folder when two folders share a name', () => {
+    const groups = groupUnmatchedSessions([
+      s('a', '/Users/dev/DERIO_NET/triage-state'),
+      s('b', '/Users/dev/STOA/triage-state'),
+      s('c', '/Users/dev/tools'),
+    ], new Map());
+    expect(groups.map(g => g.name)).toEqual(['DERIO_NET/triage-state', 'STOA/triage-state', 'tools']);
+  });
+
+  it('adds as many parents as it takes', () => {
+    const groups = groupUnmatchedSessions([
+      s('a', '/a/same/app'),
+      s('b', '/b/same/app'),
+    ], new Map());
+    expect(groups.map(g => g.name)).toEqual(['a/same/app', 'b/same/app']);
+  });
+
+  it('keeps the short name when nothing collides', () => {
+    const [group] = groupUnmatchedSessions([s('a', '/Users/dev/tools')], new Map());
+    expect(group.name).toBe('tools');
+  });
+});
+
+describe('claudeFilterEmptyMessage', () => {
+  const g = (counts) => ({ cwd: '/x', name: 'x', state: 'idle', counts: { working: 0, waiting: 0, idle: 0, ...counts }, sessions: [] });
+
+  it('explains when the filtered state exists only in unmatched folders', () => {
+    expect(claudeFilterEmptyMessage('working', [g({ working: 1 })]))
+      .toBe("No workspace rows have working sessions. 1 is in a folder VS Code doesn't list; see Other sessions above.");
+  });
+
+  it('pluralises', () => {
+    expect(claudeFilterEmptyMessage('waiting', [g({ waiting: 2 }), g({ waiting: 1 })]))
+      .toBe("No workspace rows have waiting sessions. 3 are in folders VS Code doesn't list; see Other sessions above.");
+  });
+
+  it('returns null without a filter or without unmatched sessions in that state', () => {
+    expect(claudeFilterEmptyMessage(null, [g({ working: 1 })])).toBeNull();
+    expect(claudeFilterEmptyMessage('working', [g({ idle: 3 })])).toBeNull();
+    expect(claudeFilterEmptyMessage('working', [])).toBeNull();
   });
 });

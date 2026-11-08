@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import './WorkspaceTable.css';
-import { open } from '@tauri-apps/plugin-shell';
-import { invoke } from '@tauri-apps/api/core';
-import { extractConnectionInfo, extractWorkspacePath } from '../utils/workspaceUtils';
+import { extractConnectionInfo, extractWorkspacePath, toVSCodeUri, openVSCodeUri } from '../utils/workspaceUtils';
 import { loadTableLayout, saveTableLayout, clearTableLayout } from '../utils/tableLayout';
 
 const COLUMNS = [
@@ -36,7 +34,8 @@ function WorkspaceTable({
   onSelectWorkspace,
   onSelectAll,
   sessionMap = new Map(),
-  hookConfigured = false
+  hookConfigured = false,
+  emptyMessage = null
 }) {
   // Persisted layout, loaded once on mount (design D7)
   const storedLayoutRef = useRef(undefined);
@@ -359,48 +358,8 @@ function WorkspaceTable({
     }
   };
 
-  // Convert workspace path to VS Code URI
-  const convertToVSCodeURI = (workspace) => {
-    const path = workspace.path;
-    const type = workspace.type;
-
-    // Handle remote workspaces - transform vscode-remote:// to vscode://vscode-remote/
-    if (type === 'remote' || type === 'dev-container' || type === 'attached-container' || type === 'ssh-remote') {
-      // Transform vscode-remote:// URIs to vscode://vscode-remote/ format
-      // This is the correct format that VS Code's protocol handler recognizes
-      if (path.startsWith('vscode-remote://')) {
-        // Replace vscode-remote:// with vscode://vscode-remote/
-        return path.replace(/^vscode-remote:\/\//, 'vscode://vscode-remote/');
-      }
-      // Otherwise, it might be a file:// URI that needs conversion
-      // For now, return as-is and let VS Code handle it
-      return path;
-    }
-
-    // Handle local workspaces
-    // Remove file:// prefix if present
-    let cleanPath = path;
-    if (cleanPath.startsWith('file://')) {
-      cleanPath = cleanPath.substring(7);
-    }
-
-    // Decode URL-encoded characters (e.g., %20 -> space)
-    try {
-      cleanPath = decodeURIComponent(cleanPath);
-    } catch (e) {
-      // If decoding fails, use the original path
-      console.warn('Failed to decode path:', cleanPath, e);
-    }
-
-    // Encode the path for use in vscode:// URI
-    // encodeURIComponent encodes special characters but we need to preserve slashes
-    const encodedPath = cleanPath.split('/').map(segment => encodeURIComponent(segment)).join('/');
-
-    return `vscode://file${encodedPath}`;
-  };
-
   const handleWorkspaceClick = async (e, workspace) => {
-    const uri = convertToVSCodeURI(workspace);
+    const uri = toVSCodeUri(workspace);
 
     // Check if running in Tauri mode (v2 uses __TAURI_INTERNALS__ instead of __TAURI__)
     const isTauri = typeof window !== 'undefined' && (
@@ -408,26 +367,10 @@ function WorkspaceTable({
       window.__TAURI_INTERNALS__ !== undefined
     );
 
-    console.log('[WorkspaceTable] Click detected:', { uri, isTauri, workspace });
-
     if (isTauri) {
-      // In Tauri, use the shell plugin to open external URLs
+      // Desktop: open via the open_vscode command (shell fallback inside the helper)
       e.preventDefault();
-      console.log('[WorkspaceTable] Opening in Tauri mode with URI:', uri);
-      try {
-        await invoke('open_vscode', { uri });
-        console.log('[WorkspaceTable] Successfully invoked open_vscode');
-      } catch (error) {
-        console.error('[WorkspaceTable] Failed to open VS Code: via invoke:', error);
-        // Fallback to shell open
-        try {
-          console.log('[WorkspaceTable] Trying fallback with shell.open...');
-          await open(uri);
-          console.log('[WorkspaceTable] Successfully opened via shell.open');
-        } catch (fallbackError) {
-          console.error('[WorkspaceTable] Fallback also failed:', fallbackError);
-        }
-      }
+      await openVSCodeUri(uri);
       return;
     } else {
       console.log('[WorkspaceTable] Not in Tauri mode, using web fallback');
@@ -556,7 +499,7 @@ function WorkspaceTable({
         return (
           <td key="name" className="workspace-name">
             <a
-              href={convertToVSCodeURI(workspace)}
+              href={toVSCodeUri(workspace)}
               title={workspace.path}
               className="workspace-link"
               onClick={(e) => handleWorkspaceClick(e, workspace)}
@@ -677,7 +620,7 @@ function WorkspaceTable({
           {workspaces.length === 0 ? (
             <tr>
               <td colSpan={visibleColumnCount} className="no-results">
-                No workspaces found
+                {emptyMessage || 'No workspaces found'}
               </td>
             </tr>
           ) : (

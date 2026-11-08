@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import WorkspaceTable from './WorkspaceTable';
 import SearchFilter from './SearchFilter';
 import ClaudeSessionSummary from './ClaudeSessionSummary';
 import ClaudeHookControl from './ClaudeHookControl';
 import ClaudeHookRepairBanner from './ClaudeHookRepairBanner';
 import { validatePaths, deleteWorkspaces } from '../api/client';
-import { useClaudeSessions, getAggregateState } from '../hooks/useClaudeSessions';
+import { useClaudeSessions, getAggregateState, claudeFilterEmptyMessage } from '../hooks/useClaudeSessions';
 import { useClaudeHookStatus } from '../hooks/useClaudeHookStatus';
 import { useClaudeNotifications } from '../hooks/useClaudeNotifications';
 import { ask } from '@tauri-apps/plugin-dialog';
@@ -36,9 +36,18 @@ function Dashboard({ workspaces, onRefresh }) {
 
   // Claude session monitoring (gated on hook configuration)
   const {
-    sessionMap, summary: claudeSummary, transitions, zombies, hookConfigured, refresh: refreshClaudeSessions,
+    sessionMap, summary: claudeSummary, transitions, zombies, unmatched, hookConfigured, refresh: refreshClaudeSessions,
   } = useClaudeSessions(workspaces);
   useClaudeNotifications(transitions, sessionMap, workspaces);
+
+  // After "Open in VS Code" on an unmatched folder, VS Code records it as a workspace;
+  // refresh once a little later so its row appears without waiting for the next scan.
+  const openFolderRefreshRef = useRef(null);
+  const handleOpenFolder = useCallback(() => {
+    clearTimeout(openFolderRefreshRef.current);
+    openFolderRefreshRef.current = setTimeout(() => { if (onRefresh) onRefresh(); }, 10000);
+  }, [onRefresh]);
+  useEffect(() => () => clearTimeout(openFolderRefreshRef.current), []);
 
   // Claude Code hook enable / repair / disable (not gated: it is how the feature gets turned on)
   const claudeHooks = useClaudeHookStatus({ onChange: refreshClaudeSessions });
@@ -332,8 +341,10 @@ function Dashboard({ workspaces, onRefresh }) {
         <ClaudeSessionSummary
           summary={claudeSummary}
           zombies={zombies}
+          unmatched={unmatched}
           claudeFilter={claudeFilter}
           onFilterChange={setClaudeFilter}
+          onOpenFolder={handleOpenFolder}
         />
       )}
 
@@ -366,6 +377,7 @@ function Dashboard({ workspaces, onRefresh }) {
         onSelectAll={handleSelectAll}
         sessionMap={sessionMap}
         hookConfigured={hookConfigured}
+        emptyMessage={hookConfigured ? claudeFilterEmptyMessage(claudeFilter, unmatched) : null}
       />
     </div>
   );

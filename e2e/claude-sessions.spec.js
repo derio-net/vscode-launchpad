@@ -67,4 +67,35 @@ test.describe('Claude Session Monitor', () => {
     await expect(zombieSection).toContainText('1 zombie');
     await expect(zombieSection.locator('.claude-zombie-kill')).toBeVisible();
   });
+
+  test('sessions in folders VS Code does not list appear under Other sessions', async ({ page }) => {
+    await page.route('**/api/claude-hooks', route =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'installed', events: {}, legacy: false, scriptPath: '/x' }) }));
+    await page.route('**/api/claude-sessions', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          hookConfigured: true,
+          sessions: [
+            { pid: 11, sessionId: 'u1', cwd: '/Users/nobody/unlisted-folder', startedAt: Date.now(), entrypoint: 'cli', state: 'working' },
+            { pid: 12, sessionId: 'u2', cwd: '/Users/nobody/unlisted-folder', startedAt: Date.now(), entrypoint: 'cli', state: 'idle' },
+          ],
+        }),
+      }));
+    await page.goto('/');
+    await page.waitForSelector('.workspace-table', { timeout: 10000 });
+
+    const other = page.getByRole('region', { name: /other sessions/i });
+    await expect(other).toBeVisible({ timeout: 10000 });
+    await expect(other).toContainText('unlisted-folder');
+    await expect(other).toContainText('1 working');
+    await expect(other.getByRole('button', { name: 'Open unlisted-folder in VS Code' })).toBeVisible();
+
+    // The working filter has no rows to show: the table says why
+    await page.locator('.claude-summary-working').click();
+    await expect(page.locator('.no-results')).toContainText("No workspace rows have working sessions");
+    await expect(page.locator('.no-results')).toContainText('see Other sessions above');
+  });
 });
+

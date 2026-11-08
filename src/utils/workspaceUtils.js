@@ -1,3 +1,66 @@
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-shell';
+
+const REMOTE_TYPES = new Set(['remote', 'dev-container', 'attached-container', 'ssh-remote']);
+
+/** `vscode://file/<path>` with each segment URI-encoded and the slashes kept. */
+const fileUri = (path) => `vscode://file${path.split('/').map(segment => encodeURIComponent(segment)).join('/')}`;
+
+/**
+ * VS Code URI for opening a local folder, e.g. one a Claude session runs in.
+ * @param {string} folderPath - Absolute local path
+ * @returns {string} e.g. `vscode://file/Users/dev/my%20project`
+ */
+export function folderToVSCodeUri(folderPath) {
+  return fileUri(folderPath.replace(/\/+$/, ''));
+}
+
+/**
+ * VS Code URI for a workspace from the workspace list.
+ * Remote kinds: `vscode-remote://…` becomes `vscode://vscode-remote/…` (the form
+ * VS Code's protocol handler accepts); any other remote path is returned as-is.
+ * Local: strip `file://`, decode, then re-encode per segment.
+ */
+export function toVSCodeUri(workspace) {
+  const { path, type } = workspace;
+  if (REMOTE_TYPES.has(type)) {
+    return path.startsWith('vscode-remote://')
+      ? path.replace(/^vscode-remote:\/\//, 'vscode://vscode-remote/')
+      : path;
+  }
+  let cleanPath = path.startsWith('file://') ? path.substring(7) : path;
+  try {
+    cleanPath = decodeURIComponent(cleanPath);
+  } catch (e) {
+    console.warn('Failed to decode path:', cleanPath, e);
+  }
+  return fileUri(cleanPath);
+}
+
+const isTauri = () => typeof window !== 'undefined'
+  && (window.__TAURI__ !== undefined || window.__TAURI_INTERNALS__ !== undefined);
+
+/**
+ * Open a `vscode://` URI. Desktop: the `open_vscode` Tauri command, falling back
+ * to the shell plugin. Browser: navigate to it (`navigate` is injectable for tests).
+ */
+export async function openVSCodeUri(uri, { navigate = (u) => { window.location.href = u; } } = {}) {
+  if (!isTauri()) {
+    navigate(uri);
+    return;
+  }
+  try {
+    await invoke('open_vscode', { uri });
+  } catch (error) {
+    console.error('[openVSCodeUri] open_vscode failed, trying shell open:', error);
+    try {
+      await open(uri);
+    } catch (fallbackError) {
+      console.error('[openVSCodeUri] shell open also failed:', fallbackError);
+    }
+  }
+}
+
 /**
  * Decode a hex-encoded JSON host string from VS Code's newer SSH remote URIs.
  *

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { killClaudeSessions } from '../api/client';
+import { folderToVSCodeUri, openVSCodeUri } from '../utils/workspaceUtils';
 import { ask } from '@tauri-apps/plugin-dialog';
 import './ClaudeSessionSummary.css';
 
@@ -13,8 +14,16 @@ function formatAge(startedAt) {
   return `${Math.floor(hours / 24)}d`;
 }
 
-function ClaudeSessionSummary({ summary, zombies = [], claudeFilter, onFilterChange }) {
+const OTHER_SESSIONS_LIMIT = 5;
+
+const countLabel = (counts) => ['waiting', 'working', 'idle']
+  .filter(state => counts[state] > 0)
+  .map(state => `${counts[state]} ${state}`)
+  .join(' · ');
+
+function ClaudeSessionSummary({ summary, zombies = [], unmatched = [], claudeFilter, onFilterChange, onOpenFolder }) {
   const [killingPids, setKillingPids] = useState(new Set());
+  const [showAllOther, setShowAllOther] = useState(false);
 
   const hasLiveSessions = summary && summary.total > 0;
   const hasZombies = zombies.length > 0;
@@ -37,6 +46,13 @@ function ClaudeSessionSummary({ summary, zombies = [], claudeFilter, onFilterCha
     }
     // PIDs will disappear on next poll cycle
   };
+
+  const handleOpenFolder = (cwd) => {
+    openVSCodeUri(folderToVSCodeUri(cwd));
+    if (onOpenFolder) onOpenFolder(cwd);
+  };
+
+  const visibleOther = showAllOther ? unmatched : unmatched.slice(0, OTHER_SESSIONS_LIMIT);
 
   return (
     <div className="claude-summary">
@@ -74,6 +90,45 @@ function ClaudeSessionSummary({ summary, zombies = [], claudeFilter, onFilterCha
             )}
           </div>
         </div>
+      )}
+
+      {unmatched.length > 0 && (
+        <section className="claude-summary-other" aria-labelledby="claude-other-heading">
+          <div className="claude-other-header">
+            <span id="claude-other-heading" className="claude-other-title">
+              Other sessions ({unmatched.length} folder{unmatched.length !== 1 ? 's' : ''})
+            </span>
+            <span
+              className="claude-other-hint"
+              title="Claude sessions whose folder has no row in the table. Open the folder in VS Code once and it gets its own row."
+            >
+              not in VS Code's workspace list
+            </span>
+          </div>
+          <ul className="claude-other-list">
+            {visibleOther.map(group => (
+              <li key={group.cwd} className="claude-other-item">
+                <span className={`claude-dot claude-dot-${group.state}`} aria-hidden="true" />
+                <span className="claude-other-name" title={group.cwd}>{group.name}</span>
+                <span className="claude-other-counts">{countLabel(group.counts)}</span>
+                <button
+                  type="button"
+                  className="claude-other-open"
+                  onClick={() => handleOpenFolder(group.cwd)}
+                  aria-label={`Open ${group.name} in VS Code`}
+                  title={`Open ${group.cwd} in VS Code`}
+                >
+                  Open in VS Code
+                </button>
+              </li>
+            ))}
+          </ul>
+          {unmatched.length > OTHER_SESSIONS_LIMIT && (
+            <button type="button" className="claude-other-toggle" onClick={() => setShowAllOther(v => !v)}>
+              {showAllOther ? 'Show fewer' : `Show all (${unmatched.length})`}
+            </button>
+          )}
+        </section>
       )}
 
       {hasZombies && (
