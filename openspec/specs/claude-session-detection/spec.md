@@ -1,5 +1,8 @@
-## ADDED Requirements
+# claude-session-detection Specification
 
+## Purpose
+Define how the server discovers Claude Code sessions, determines their state from hook state files, detects zombies, gates the feature on hook configuration, and exposes sessions over REST.
+## Requirements
 ### Requirement: Discover Claude Code sessions from filesystem
 The system SHALL discover active Claude Code sessions by reading JSON files from the `~/.claude/sessions/` directory.
 
@@ -30,7 +33,7 @@ The system SHALL verify that each discovered session's process is still running 
 - **THEN** the session SHALL NOT be included in scan results
 
 ### Requirement: Determine session state from hook state files
-The system SHALL read session state from `/tmp/claude-session-state-<sessionId>.json` files written by Claude Code hooks.
+The system SHALL read session state from `~/.claude/vscode-launchpad/state/<sessionId>.json` files written by the LaunchPad Claude Code hook. The location SHALL be derived from the user's home directory, not from the temporary directory, so the hook and the scanner always agree.
 
 #### Scenario: State file exists with "working" type
 - **WHEN** a state file contains `{"type": "working", ...}`
@@ -47,6 +50,10 @@ The system SHALL read session state from `/tmp/claude-session-state-<sessionId>.
 #### Scenario: State file does not exist
 - **WHEN** no state file exists for a session
 - **THEN** the session state SHALL be `"idle"` (default — no hook event fired yet)
+
+#### Scenario: Temporary directory differs between processes
+- **WHEN** the server's `TMPDIR` differs from the environment Claude Code runs hooks in (e.g. macOS `/var/folders/…` vs `/tmp`)
+- **THEN** the scanner SHALL still read the state written by the hook
 
 ### Requirement: Detect zombie sessions
 The system SHALL detect orphaned sessions whose terminal or parent process is no longer connected.
@@ -68,14 +75,19 @@ The system SHALL detect orphaned sessions whose terminal or parent process is no
 - **THEN** the zombie state SHALL take precedence over any hook-reported state
 
 ### Requirement: Gate feature on hook configuration
-The system SHALL check that Claude Code hooks are configured before enabling the feature.
+The system SHALL enable the feature only when the hook installation status is `installed` (see `claude-hook-installer`): all three hook types configured with the current LaunchPad hook, and the hook script present on disk.
 
 #### Scenario: Hooks are configured
-- **WHEN** `~/.claude/settings.json` contains the hook script in all three hook types: Notification, UserPromptSubmit, and Stop
+- **WHEN** the hook installation status is `installed`
 - **THEN** `hookConfigured` SHALL be `true` in the API response
 
 #### Scenario: Only partial hooks configured
-- **WHEN** `~/.claude/settings.json` contains the hook script in some but not all three required hook types
+- **WHEN** `~/.claude/settings.json` contains the LaunchPad hook in some but not all three required hook types
+- **THEN** `hookConfigured` SHALL be `false` in the API response
+- **AND** the sessions array SHALL be empty
+
+#### Scenario: Hook script missing
+- **WHEN** all three hook types reference a hook script that does not exist on disk
 - **THEN** `hookConfigured` SHALL be `false` in the API response
 - **AND** the sessions array SHALL be empty
 
@@ -117,8 +129,13 @@ The system SHALL poll for session changes at a configurable interval (default 5 
 - **THEN** it SHALL complete within 2 seconds under normal conditions (< 20 session files)
 
 ### Requirement: Clean up stale state files
-The system SHALL remove state files in `/tmp/` that no longer correspond to active sessions.
+The system SHALL remove state files in `~/.claude/vscode-launchpad/state/` that no longer correspond to active sessions.
 
 #### Scenario: State file for dead session is removed
-- **WHEN** a `/tmp/claude-session-state-<sessionId>.json` exists but no matching session is found in `~/.claude/sessions/`
+- **WHEN** `~/.claude/vscode-launchpad/state/<sessionId>.json` exists but no matching session is found in `~/.claude/sessions/`
 - **THEN** the state file SHALL be deleted
+
+#### Scenario: State directory does not exist
+- **WHEN** `~/.claude/vscode-launchpad/state/` does not exist
+- **THEN** cleanup SHALL do nothing and SHALL NOT log an error
+
